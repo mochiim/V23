@@ -55,6 +55,7 @@ class energy:
             """
             Energy generation per unit mass for all reactions
             """
+            r_ = self.r_
             self.eps = np.zeros(7)       # [J/kgs]
             T = self.T*1e-9             # solar core temperature in units 1e9 K
             T1 = T/(1 + 4.95*1e-2*T)    # scaled temperature 1
@@ -94,14 +95,15 @@ class energy:
                 lambda_e7 = 1.57*1e-7/(self.n_e*N_A)
 
 
-            self.r_[0] = self.n_p**2*lambda_pp / (2*self.rho)
-            self.r_[1] = self.n_He3**2*lambda_33 / (2*self.rho)
-            self.r_[2] = self.n_He3*self.n_He4*lambda_34 / (self.rho)
-            self.r_[3] = self.n_Be*self.n_e*lambda_e7 / (self.rho)
-            self.r_[4] = self.n_Li*self.n_p*lambda_17_ / (self.rho)
-            self.r_[5] = self.n_Be*self.n_p*lambda_17 / (self.rho)
-            self.r_[6] = self.n_14*self.n_p*lambda_p14 / (self.rho)
+            r_[0] = self.n_p**2*lambda_pp / (2*self.rho)
+            r_[1] = self.n_He3**2*lambda_33 / (2*self.rho)
+            r_[2] = self.n_He3*self.n_He4*lambda_34 / (self.rho)
+            r_[3] = self.n_Be*self.n_e*lambda_e7 / (self.rho)
+            r_[4] = self.n_Li*self.n_p*lambda_17_ / (self.rho)
+            r_[5] = self.n_Be*self.n_p*lambda_17 / (self.rho)
+            r_[6] = self.n_14*self.n_p*lambda_p14 / (self.rho)
 
+            self.r_ = r_
             return self.r_
 
         def _sanitytest(self):
@@ -136,14 +138,14 @@ class energy:
             print(exp6, res6, abs(exp6 - res6) < tol)
 
             print("Prints values of sanity check")
-            print("|Results                      | Results         |Expected Values          |True/False")
-            print(f"|r_HH     * (Q_HH + Q_HD)     | {res0:15.2} | {exp0:15.2}         |   {abs(res0 - exp0) < tol}")
-            print(f"|r_He3He3 * Q_He3He3          | {res1:15.2} | {exp1:15.2}         |   {abs(res1 - exp1) < tol}")
-            print(f"|r_He3He4 * Q_He3He4          | {res2:15.3} | {exp2:15.2}         |   {abs(res2 - exp2) < tol}")
-            print(f"|r_Bee    * Q_Bee             | {res2:15.4} | {exp3:15.2}         |   {abs(res3 - exp3) < tol}")
-            print(f"|r_LiH    * Q_LiH             | {res2:15.5} | {exp4:15.2}         |   {abs(res4 - exp4) < tol}")
-            print(f"|r_BeH    * (Q_BeH + Q_decay) | {res2:15.6} | {exp5:15.2}         |   {abs(res5 - exp5) < tol}")
-            print(f"|r_NH     * Q_CNO             | {res2:15.7} | {exp6:15.2}         |   {abs(res6 - exp6) < tol}")
+            print("  | Results        |Expected Values          |True/False")
+            print(f" | {res0:15.2} | {exp0:15.2}         |   {abs(res0 - exp0) < tol}")
+            print(f" | {res1:15.2} | {exp1:15.2}         |   {abs(res1 - exp1) < tol}")
+            print(f" | {res2:15.3} | {exp2:15.2}         |   {abs(res2 - exp2) < tol}")
+            print(f" | {res2:15.4} | {exp3:15.2}         |   {abs(res3 - exp3) < tol}")
+            print(f" | {res2:15.5} | {exp4:15.2}         |   {abs(res4 - exp4) < tol}")
+            print(f" | {res2:15.6} | {exp5:15.2}         |   {abs(res5 - exp5) < tol}")
+            print(f" | {res2:15.7} | {exp6:15.2}         |   {abs(res6 - exp6) < tol}")
             return None
 
         _energy_generation(self)
