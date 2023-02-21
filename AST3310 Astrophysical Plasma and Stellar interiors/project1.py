@@ -6,7 +6,7 @@ class energy:
     A class which accepts a temperature and density, and then calculates the
     amount of energy produced by the fusion chains discussed in Chapter 3
     """
-    def __init__(self, T, rho, sanity = None):
+    def __init__(self, T, rho, sanity):
 
         # defining some variables
         self.N_A = 6.0221*1e23   # Avogadro's number [1/mol]
@@ -33,8 +33,8 @@ class energy:
         self.Q[4]= 17.346                    # PPII [MeV]
         self.Q[5] = 0.137 + 8.367 + 2.995    # PPIII [MeV]
         self.Q[6] = (1.944 + 1.513 + 7.551 + \
-                7.297 + 1.757 + 4.966)  # CNO cycle [MeV]
-        self.Q = self.Q*(self.eV*1e6)          # [MeV] -> [J]
+                7.297 + 1.757 + 4.966)       # CNO cycle [MeV]
+        self.Q = self.Q*(self.eV*1e6)        # [MeV] -> [J]
 
         # number densities
         self.n_p = rho*self.X / self.mu
@@ -95,13 +95,13 @@ class energy:
                 lambda_e7 = 1.57*1e-7/(self.n_e*N_A)
 
 
-            r_[0] = self.n_p**2*lambda_pp / (2*self.rho)
-            r_[1] = self.n_He3**2*lambda_33 / (2*self.rho)
-            r_[2] = self.n_He3*self.n_He4*lambda_34 / (self.rho)
-            r_[3] = self.n_Be*self.n_e*lambda_e7 / (self.rho)
-            r_[4] = self.n_Li*self.n_p*lambda_17_ / (self.rho)
-            r_[5] = self.n_Be*self.n_p*lambda_17 / (self.rho)
-            r_[6] = self.n_14*self.n_p*lambda_p14 / (self.rho)
+            r_[0] = (self.n_p**2)*lambda_pp / (2*self.rho)
+            r_[1] = (self.n_He3**2)*lambda_33 / (2*self.rho)
+            r_[2] = (self.n_He3*self.n_He4)*lambda_34 / (self.rho)
+            r_[3] = (self.n_Be*self.n_e)*lambda_e7 / (self.rho)
+            r_[4] = (self.n_Li*self.n_p)*lambda_17_ / (self.rho)
+            r_[5] = (self.n_Be*self.n_p)*lambda_17 / (self.rho)
+            r_[6] = (self.n_14*self.n_p)*lambda_p14 / (self.rho)
 
             self.r_ = r_
             return self.r_
@@ -129,14 +129,6 @@ class energy:
             res5 = rho*r_[5]*Q[5]
             res6 = rho*r_[6]*Q[6]
 
-            print(exp0, res0, abs(exp0 - res0) < tol)
-            print(exp1, res1, abs(exp1 - res1) < tol)
-            print(exp2, res2, abs(exp2 - res2) < tol)
-            print(exp3, res3, abs(exp3 - res3) < tol)
-            print(exp4, res4, abs(exp4 - res4) < tol)
-            print(exp5, res5, abs(exp5 - res5) < tol)
-            print(exp6, res6, abs(exp6 - res6) < tol)
-
             print("Prints values of sanity check")
             print("  | Results        |Expected Values          |True/False")
             print(f" | {res0:15.2} | {exp0:15.2}         |   {abs(res0 - exp0) < tol}")
@@ -149,14 +141,17 @@ class energy:
             return None
 
         _energy_generation(self)
-        #print(self.r_)
-        self.sanity = _sanitytest(self)
+        if self.sanity == "Y":
+            self.sanity = _sanitytest(self)
+        else:
+            print("Saninty check not initiated")
 
+        print(self.r_)
         #print(_energy_generation(self))
 
 
-A = energy(1.57*1e7, 1.62*1e5)
-
+#A = energy(1.57*1e7, 1.62*1e5, "Y")
+A = energy(1.57*1e7, 1.62*1e5, "N")
 
 
 # Temperature of solar core T = 1.57*1e7 [K]
