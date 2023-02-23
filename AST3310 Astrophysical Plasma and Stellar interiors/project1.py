@@ -1,11 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as pyplot
 
+
+T = 1.57*1e7 # temperature of solar core [K]
+rho = 1.62*1e5 # density of solar core [kg/m^3]
+
 class energy:
+
     """
     A class which accepts a temperature and density, and then calculates the
     amount of energy produced by the fusion chains discussed in Chapter 3
     """
+
     def __init__(self, T, rho, sanity):
 
         # defining some variables
@@ -24,16 +30,17 @@ class energy:
         self.Z_14 = 1e-11       # nitrogen 14
 
         # energy production
-        self.Q = np.zeros(7)                 # energy released per reaction [J]
-        self.Q[0] = 1.177 + 5.494            # PP0 [MeV]
-        self.Q[1] = 12.860                   # PP1 [MeV]
-        self.Q[2] = 1.586                    # PPII and PPIII [MeV]
-        self.Q[3] = 0.049                    # PPII [MeV]
-        self.Q[4]= 17.346                    # PPII [MeV]
-        self.Q[5] = 0.137 + 8.367 + 2.995    # PPIII [MeV]
+        self.Q = np.zeros(7)                    # energy released per reaction [J]
+        self.Q[0] = 1.177 + 5.494               # PP0 [MeV]
+        self.Q[1] = 12.860                      # PP1 [MeV]
+        self.Q[2] = 1.586                       # PPII and PPIII [MeV]
+        self.Q[3] = 0.049                       # PPII [MeV]
+        self.Q[4]= 17.346                       # PPII [MeV]
+        #self.Q[5] = 0.137 + 8.367 + 2.995      # PPIII [MeV]
+        self.Q[5] = 0.137 + 11.268 + 0.0978     # PPIII [MeV]
         self.Q[6] = (1.944 + 1.513 + 7.551 + \
-                7.297 + 1.757 + 4.966)       # CNO cycle [MeV]
-        self.Q = self.Q*(self.eV*1e6)        # [MeV] -> [J]
+                7.297 + 1.757 + 4.966)          # CNO cycle [MeV]
+        self.Q = self.Q*(self.eV*1e6)           # [MeV] -> [J]
 
         # number densities
         self.n_p = rho*self.X / self.mu
@@ -93,31 +100,35 @@ class energy:
                 lambda_e7 = 1.57*1e-7/(self.n_e*N_A)
 
             # calculating reaction rates
-            r_[0] = (self.n_p**2)*lambda_pp / (2*self.rho)           # PP0
-            r_[1] = (self.n_He3**2)*lambda_33 / (2*self.rho)         # PP1
-            r_[2] = (self.n_He3*self.n_He4)*lambda_34 / (self.rho)   # PP1 & PP2
-            r_[3] = (self.n_Be*self.n_e)*lambda_e7 / (self.rho)      # PP2
-            r_[4] = (self.n_Li*self.n_p)*lambda_17prime / (self.rho) # PP2
-            r_[5] = (self.n_Be*self.n_p)*lambda_17 / (self.rho)      # PP3
+            r_[0] = (self.n_p**2)*lambda_pp / (2*self.rho)           # H + H
+            r_[1] = (self.n_He3**2)*lambda_33 / (2*self.rho)         # He3 + He3
+            r_[2] = (self.n_He3*self.n_He4)*lambda_34 / (self.rho)   # He3 + He4
+            r_[3] = (self.n_Be*self.n_e)*lambda_e7 / (self.rho)      # Be7 + e
+            r_[4] = (self.n_Li*self.n_p)*lambda_17prime / (self.rho) # Li7 + H
+            r_[5] = (self.n_Be*self.n_p)*lambda_17 / (self.rho)      # Be7 + H
             r_[6] = (self.n_14*self.n_p)*lambda_p14 / (self.rho)     # CNO
 
-            # making sure noe step consumes more of an element than the previous
-            # step are able to produce
-            """
-            if r_[0] < r_[1]:
-                s = r_[0]/r_[1]
-                r_[1] = s * r_[0]
+            # making sure no step consumes more of an element than the previous step are able to produce
 
-            if r_[1] < r_[2] + r_[3] + r_[4]:
-                s = r_[1] / (r_[2] + r_[3] + r_[4])
-                r_[2] = s * r_[2]
-                r_[3] = s * r_[3]
-                r_[4] = s * r_[4]
+            # helium 3
+            if r_[0] < (2*r_[1]):
+                R = r_[0]/ (2*r_[1]) # normalizing factor
+                r_[1] = R * r_[0]
 
-            if r_[2] + r_[3] + r_[4] < r_[5]:
-                s = (r_[2] + r_[3] + r_[4]) / r_[5]
-                r_[5] = s * r_[5]
-            """
+            # Beryllium 7
+            if r_[2] < r_[3] + r_[5]:
+                R = r_[2] / (r_[3] + r_[5]) # normalizing factor
+                r_[3] = R*r_[3]
+                r_[5] = R*r_[5]
+
+            # Lithium 7
+            if r_[3] < r_[4]:
+                R = r_[3] / r_[4] # normalizing factor
+                r_[4] = r_[4]*R
+
+            if r_[5] < r_[5]:
+                r_[5]
+
             self.r_ = r_
             return self.r_
 
@@ -131,7 +142,7 @@ class energy:
         def _sanitytest(self):
             r_ = self.r_
             Q = self.Q
-            tol = 1
+            tol = 0.9
             rho = self.rho
 
             # expectation values [Jm^-3s^-1]
@@ -153,7 +164,7 @@ class energy:
             res6 = rho*r_[6]*Q[6]
 
             print("Prints values of sanity check")
-            print(" |  Results        |Expected Values          |True/False")
+            print(" |  Results        |Expected Values          |Sanity test passed?")
             print(f" | {res0:15.2} | {exp0:15.2}         |   {abs(res0 - exp0) < tol}")
             print(f" | {res1:15.2} | {exp1:15.2}         |   {abs(res1 - exp1) < tol}")
             print(f" | {res2:15.3} | {exp2:15.2}         |   {abs(res2 - exp2) < tol}")
@@ -165,18 +176,9 @@ class energy:
 
         reaction_rates(self)
 
-        if self.sanity == "Y": # [Y/N]
-            print(self.r_)
+        if self.sanity == "Y": # options are [Y/N]
             self.sanity = _sanitytest(self)
         else:
             print("Saninty check not initiated")
 
-
-
-
-A = energy(1.57*1e7, 1.62*1e5, "Y")
-
-
-# Temperature of solar core T = 1.57*1e7 [K]
-# Density of solar core rho = 1.62*1e5 [kg/m^3]
-# Adjusted temperature T = 1e8 [K]
+A = energy(T, rho, "Y")
