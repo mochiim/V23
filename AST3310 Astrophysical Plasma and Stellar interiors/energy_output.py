@@ -18,12 +18,12 @@ m_Be8 = 8.00531		   # Beryllium 8 [u]
 m_Li7 = 7.016004	   # Lithium 7 [u]
 m_B8 = 8.02461		   # Boron 8 [u]
 
-C12 = 12				# Carbon 12 mass [u]
-C13 = 13.00336			# Carbon 13 mass [u]
-N13 = 13.00574			# Nitrogen 13 mass [u]
-N14 = 14.00307			# Nitrogen 14 mass [u]
-N15 = 15.00109			# Nitrogen 15 mass [u]
-O15 = 15.00307	        # Oxygen 15 [u]
+m_C12 = 12				# Carbon 12 mass [u]
+m_C13 = 13.00336			# Carbon 13 mass [u]
+m_N13 = 13.00574			# Nitrogen 13 mass [u]
+m_N14 = 14.00307			# Nitrogen 14 mass [u]
+m_N15 = 15.00109			# Nitrogen 15 mass [u]
+m_O15 = 15.00307	        # Oxygen 15 [u]
 
 def energy_output(initial_mass, final_mass):
     """
@@ -48,3 +48,14 @@ PP3[0] = energy_output(m_He3 + m_He4, m_Be7)
 PP3[1] = energy_output(m_Be7 + m_H, m_B8)
 PP3[2] = energy_output(m_B8, m_Be8) - 6.711
 PP3[3] = energy_output(m_Be8, 2*m_He4)
+
+
+CNO = np.zeros(6)
+CNO[0] = energy_output(m_C12 + m_H, m_N13)
+CNO[1] = energy_output(m_N13, m_C13) - 0.707
+CNO[2] = energy_output(m_C13 + m_H, m_N14)
+CNO[3] = energy_output(m_N14 + m_H, m_O15)
+CNO[4] = energy_output(m_O15, m_N15) - 0.997
+CNO[5] = energy_output(m_N15 + m_H, m_C12 + m_He4)
+
+print(CNO)
