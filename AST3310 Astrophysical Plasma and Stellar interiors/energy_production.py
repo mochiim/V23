@@ -210,8 +210,9 @@ if __name__ == "__main__":
     A = energy(T, rho)
     A.reaction_rates()
     A._sanitycheck([4.04*1e2, 8.68*1e-9, 4.86*1e-5, 1.49*1e-6, 5.29*1e-4, 1.63*1e-6, 9.18*1e-8])
-    #A.energy_production()
+    A.energy_production()
 
     B = energy(1e8, rho)
     B.reaction_rates()
     B._sanitycheck([7.34e4, 1.09e0, 1.74e4, 1.22e-3, 4.35e-1, 1.26e5, 3.45e4])
+    B.energy_production()
