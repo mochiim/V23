@@ -65,14 +65,6 @@ class energy:
         # proportionality function lambda
         self.lambdas = None         # [m^3/s]
 
-        #  atomic mass of different elements
-        self.m_p = 1.0073           # [u]
-        self.m_H = 1.0078           # [u]
-        self.m_He3 = 3.0160         # [u]
-        self.m_He4 = 4.0026         # [u]
-        self.m_e = 5.4858e-4        # [u]
-
-
     def reaction_rates(self):
         """
         Calculating reaction rates per unit mass for PP chain and CNO cycle
@@ -168,16 +160,6 @@ class energy:
         print(f"CNO: {eps[6]:15.2} J/kgs")
         return None
 
-    def energy_output(self):
-        # expected energy release per He4 in PP chain (PPI, PP2, PP3) and CNO [MeV]
-        exp = [26.202, 25.652, 18.598, 25.028]
-
-        conversion = (self.mu*self.c**2*1e-6)/self.eV
-        PPI = ((2*self.m_He3) - (self.m_He4 + 2*(self.m_p + self.m_e)))*conversion
-
-        print(PPI)
-        return None
-
     def _sanitycheck(self, exp):
         """
         Sanity check to see if results from calculation corresponds with the expected values.
@@ -227,10 +209,9 @@ if __name__ == "__main__":
 
     A = energy(T, rho)
     A.reaction_rates()
-    #A._sanitycheck([4.04*1e2, 8.68*1e-9, 4.86*1e-5, 1.49*1e-6, 5.29*1e-4, 1.63*1e-6, 9.18*1e-8])
+    A._sanitycheck([4.04*1e2, 8.68*1e-9, 4.86*1e-5, 1.49*1e-6, 5.29*1e-4, 1.63*1e-6, 9.18*1e-8])
     #A.energy_production()
-    A.energy_output()
 
-    #B = energy(1e8, rho)
-    #B.reaction_rates()
-    #B._sanitycheck([7.34e4, 1.09e0, 1.74e4, 1.22e-3, 4.35e-1, 1.26e5, 3.45e4])
+    B = energy(1e8, rho)
+    B.reaction_rates()
+    B._sanitycheck([7.34e4, 1.09e0, 1.74e4, 1.22e-3, 4.35e-1, 1.26e5, 3.45e4])
