@@ -153,11 +153,11 @@ class energy:
             eps[i] = self.r_[i]*self.Q[i]
 
         print("Energy production energy output from each individual reaction in the PP chain and CNO cycle. ")
-        print(f"PP0: {eps[0]:15.2} J/kgs")
-        print(f"PP1: {eps[1]:15.2} J/kgs")
-        print(f"PP2: {eps[2] + eps[3] + eps[4]:15.2} J/kgs")
-        print(f"PP3: {eps[2] + eps[5]:15.2} J/kgs")
-        print(f"CNO: {eps[6]:15.2} J/kgs")
+        print(f"PP0: {eps[0]:15.2} W/kg")
+        print(f"PP1: {eps[1]:15.2} W/kg")
+        print(f"PP2: {eps[2] + eps[3] + eps[4]:15.2} W/kg")
+        print(f"PP3: {eps[2] + eps[5]:15.2} W/kg")
+        print(f"CNO: {eps[6]:15.2} W/kg")
         return None
 
     def _sanitycheck(self, exp):
@@ -211,6 +211,25 @@ if __name__ == "__main__":
     A.reaction_rates()
     A._sanitycheck([4.04*1e2, 8.68*1e-9, 4.86*1e-5, 1.49*1e-6, 5.29*1e-4, 1.63*1e-6, 9.18*1e-8])
     A.energy_production()
+    """ Output:
+    Sanity check for T = 15700000.0 K and rho = 162000.0 kg/m^3
+    |  Results        |Expected Values          |Sanity test passed?
+    |           4e+02 |           4e+02         |   True
+    |          8.7e-09 |         8.7e-09         |   True
+    |        4.87e-05 |         4.9e-05         |   True
+    |       1.496e-06 |         1.5e-06         |   True
+    |      0.00052967 |         0.00053         |   True
+    |     1.63865e-06 |         1.6e-06         |   True
+    |    9.184337e-08 |         9.2e-08         |   True
+
+     Energy production energy output from each individual reaction in the PP chain and CNO cycle.
+     PP0:          0.0025 J/kgs
+     PP1:         5.4e-14 J/kgs
+     PP2:         3.6e-09 J/kgs
+     PP3:         3.1e-10 J/kgs
+     CNO:         5.7e-13 J/kgs
+     """
+
 
     B = energy(1e8, rho)
     B.reaction_rates()
