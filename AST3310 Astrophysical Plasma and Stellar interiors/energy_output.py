@@ -32,30 +32,53 @@ def energy_output(initial_mass, final_mass):
     """
     E = (initial_mass - final_mass) * conversion
     return E
+
+# energy released in neutrinos [MeV]
+Q_nu = np.array([2*0.265, 0.265  + 0.815, 0.265 + 6.711, 0.707 + 0.997])
+
+# calulating energy output of PP0
 PP0 = np.zeros(2)
-PP0[0] = energy_output(2*m_H, m_D2) - 0.265
+PP0[0] = energy_output(2*m_H, m_D2) - 0.265         # neutrino energy [MeV] added
 PP0[1] = energy_output(m_D2 + m_H, m_He3)
 
+# calulating energy output of PP1
 PP1 = energy_output(2*m_He3, m_He4 + 2*m_H)
 
+# calulating energy output of PP2
 PP2 = np.zeros(3)
 PP2[0] = energy_output(m_He3 + m_He4, m_Be7)
-PP2[1] = energy_output(m_Be7 + m_e, m_Li7) - 0.815
+PP2[1] = energy_output(m_Be7 + m_e, m_Li7) - 0.815  # neutrino energy [MeV] added
 PP2[2] = energy_output(m_Li7 + m_H, 2*m_He4)
 
+# calulating energy output of PP3
 PP3 = np.zeros(4)
 PP3[0] = energy_output(m_He3 + m_He4, m_Be7)
 PP3[1] = energy_output(m_Be7 + m_H, m_B8)
-PP3[2] = energy_output(m_B8, m_Be8) - 6.711
+PP3[2] = energy_output(m_B8, m_Be8) - 6.711         # neutrino energy [MeV] added
 PP3[3] = energy_output(m_Be8, 2*m_He4)
 
-
+# calulating energy output of CNO cycle
 CNO = np.zeros(6)
 CNO[0] = energy_output(m_C12 + m_H, m_N13)
-CNO[1] = energy_output(m_N13, m_C13) - 0.707
+CNO[1] = energy_output(m_N13, m_C13) - 0.707        # neutrino energy [MeV] added
 CNO[2] = energy_output(m_C13 + m_H, m_N14)
 CNO[3] = energy_output(m_N14 + m_H, m_O15)
-CNO[4] = energy_output(m_O15, m_N15) - 0.997
+CNO[4] = energy_output(m_O15, m_N15) - 0.997        # neutrino energy [MeV] added
 CNO[5] = energy_output(m_N15 + m_H, m_C12 + m_He4)
 
-print(CNO)
+# total energy output per fusion branch
+e_tot = np.array([2*np.sum(PP0) + np.sum(PP1), np.sum(PP0) + np.sum(PP2), np.sum(PP0) + np.sum(PP3), np.sum(CNO)])
+
+print("Branch | Energy output [MeV]  | Expected [MeV] | Neutrino energy [MeV] | Energy lost to neutrino energy ")
+print(f"PP1    | {e_tot[0]: .5}              |    26.202      | {Q_nu[0]}                  | {Q_nu[0]/e_tot[0]: .3}%")
+print(f"PP2    | {e_tot[1]: .5}              |    25.652      | {Q_nu[1]}                  | {Q_nu[1]/e_tot[1]: .3}%")
+print(f"PP3    | {e_tot[2]: .5}              |    18.59       | {Q_nu[2]}                 | {Q_nu[2]/e_tot[2]: .3}%")
+print(f"CNO    | {e_tot[3]: .5}               |    25.028      | {Q_nu[3]}                 | {Q_nu[3]/e_tot[3]: .3}%")
+
+"""
+Branch | Energy output [MeV]  | Expected [MeV] | Neutrino energy [MeV] | Energy lost to neutrino energy
+PP1    |  26.204              |    26.202      | 0.53                  |  0.0202%
+PP2    |  26.165              |    25.652      | 1.08                  |  0.0413%
+PP3    |  19.758              |    18.59       | 6.976                 |  0.353%
+CNO    |  25.03               |    25.028      | 1.704                 |  0.0681%
+"""
