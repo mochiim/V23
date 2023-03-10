@@ -1,26 +1,26 @@
 import numpy as np
 import matplotlib.pyplot as pyplot
+import scipy.constants as const
 
 class energy:
 
     """
-    This class accepts a temperature [K] and density [kg/m^3] of the Sun
+    This class calculates the energy production, ε, in SI units. This includes the PP chain and CNO cycle.
+    These are the following arguments needed to call the class: temperature [K] and density [kg/m^3] of the stellar object
 
     The class contain the following functions:
-    reaction_rates(self)- calculation of nuclear reaction rates in reactions per second and per [mole/m^3]
+    reaction_rates(self) - calculation of nuclear reaction rates
     energy_production(self)- calculates the amount of energy produced by the fusion chains (PP chain and CNO).
-    _sanitycheck(self, exp)- sanity check to make sure the reaction rates are correct.
-
-
+    _sanitycheck(self, exp)- sanity check to make sure the reaction rates are calculated correct.
     """
 
     def __init__(self, T, rho):
 
-        # defining useful variables (fetched from appendix A in lecture notes)
-        self.N_A = 6.0221e23    # Avogadro's number [1/mol]
-        self.mu = 1.6606e-27    # atomic mass unit [kg]
-        self.eV = 1.6022e-19    # [J]
-        self.c = 2.9979e8       # speed of light [ms^-1]
+        # defining physical constants
+        self.N_A = const.N_A   # Avogadro's number [1/mol]
+        self.mu = const.m_u    # atomic mass unit [kg]
+        self.eV = const.eV     # [J]
+        self.c = const.c       # speed of light [ms^-1]
 
         # solar attributes (fetched from appendix B in lecture notes)
         self.T = T              # temperature of solar core [K]
@@ -70,7 +70,6 @@ class energy:
         Calculating reaction rates per unit mass for PP chain and CNO cycle
         """
         # defining variables
-        r_ = self.r_
         T = self.T
         T9 = T*1e-9                     # solar core temperature in units 1e9 K
         T9x = T9 / (1 + 4.95e-2*T9)     # scaled temperature 1
@@ -90,7 +89,11 @@ class energy:
         lambda_34 = (5.61e6 * T9x**(5/6) * T9**(-3/2) * np.exp(-12.826 * \
                     T9x**(-1/3))) / (N_A*1e6)
 
-        lambda_e7 = (1.34e-10 * T9**(-1/2) * (1 - .537 * T9**(1/3) + 3.86 * \
+        # including upper limit of Beryllium 7
+        if self.T < 1e6:
+            lambda_e7 = 1.57e-7/(self.n_e*N_A)
+        else:
+            lambda_e7 = (1.34e-10 * T9**(-1/2) * (1 - .537 * T9**(1/3) + 3.86 * \
                     T9**(2/3) + .0027 * T9**(-1) * np.exp(2.515e-3 * T9**(-1)))) / (N_A*1e6)
 
         lambda_17prime = (1.096e9 * T9**(-2/3) * np.exp(-8.472 * T9**(-1/3))\
@@ -105,60 +108,51 @@ class energy:
                     * T9 + .261 * T9**(4/3) + .127 * T9**(5/3)) + 2.37e3 * T9**(-3/2)\
                      * np.exp(-3.011 * T9**(-1)) + 2.19e4 * np.exp(-12.53 * T9**(-1))) / (N_A*1e6)
 
-        # including upper limit of Beryllium 7
-        if self.T < 1e6:
-            lambda_e7 = 1.57e-7/(self.n_e*N_A)
 
         # updating values of self.lambdas
         self.lambdas = np.array([lambda_pp, lambda_33, lambda_34, lambda_e7, lambda_17prime, lambda_17, lambda_p14])
 
         # calculating reaction rates [1/kgs]
-        r_[0] = (self.n_p*self.n_p)*lambda_pp / (2*self.rho)         # H + H (PP0)
-        r_[1] = (self.n_He3*self.n_He3)*lambda_33 / (2*self.rho)     # He3 + He3 (PP1)
-        r_[2] = (self.n_He3*self.n_He4)*lambda_34 / (self.rho)       # He3 + He4 (PP2, P3)
-        r_[3] = (self.n_Be*self.n_e)*lambda_e7 / (self.rho)          # Be7 + e (PP2)
-        r_[4] = (self.n_Li*self.n_p)*lambda_17prime / (self.rho)     # Li7 + H (PP2)
-        r_[5] = (self.n_Be*self.n_p)*lambda_17 / (self.rho)          # Be7 + H (PP3)
-        r_[6] = (self.n_14*self.n_p)*lambda_p14 / (self.rho)         # CNO
+        self.r_[0] = (self.n_p*self.n_p)*lambda_pp / (2*self.rho)         # H + H (PP0)
+        self.r_[1] = (self.n_He3*self.n_He3)*lambda_33 / (2*self.rho)     # He3 + He3 (PP1)
+        self.r_[2] = (self.n_He3*self.n_He4)*lambda_34 / (self.rho)       # He3 + He4 (PP2, P3)
+        self.r_[3] = (self.n_Be*self.n_e)*lambda_e7 / (self.rho)          # Be7 + e (PP2)
+        self.r_[4] = (self.n_Li*self.n_p)*lambda_17prime / (self.rho)     # Li7 + H (PP2)
+        self.r_[5] = (self.n_Be*self.n_p)*lambda_17 / (self.rho)          # Be7 + H (PP3)
+        self.r_[6] = (self.n_14*self.n_p)*lambda_p14 / (self.rho)         # CNO
 
         # making sure no step consumes more of an element than the previous step are able to produce
 
         # helium 3
-        if r_[0] < (2*r_[1] + r_[2]):
-            H = r_[0]/ (2*r_[1] + r_[2]) # normalizing factor
-            r_[1] = H*r_[1]
-            r_[2] = H*r_[2]
+        if self.r_[0] < (2*self.r_[1] + self.r_[2]):
+            H = self.r_[0]/ (2*self.r_[1] + self.r_[2]) # normalizing factor
+            self.r_[1] = H*self.r_[1]
+            self.r_[2] = H*self.r_[2]
 
         # Beryllium 7
-        if r_[2] < r_[3] + r_[5]:
-            B = r_[2] / (r_[3] + r_[5]) # normalizing factor
-            r_[3] = B*r_[3]
-            r_[5] = B*r_[5]
+        if self.r_[2] < self.r_[3] + self.r_[5]:
+            B = self.r_[2] / (self.r_[3] + self.r_[5]) # normalizing factor
+            self.r_[3] = B*self.r_[3]
+            self.r_[5] = B*self.r_[5]
 
         # Lithium 7
-        if r_[3] < r_[4]:
-            L = r_[3] / r_[4] # normalizing factor
-            r_[4] = L*r_[4]
+        if self.r_[3] < self.r_[4]:
+            L = self.r_[3] / self.r_[4] # normalizing factor
+            self.r_[4] = L*self.r_[4]
 
-        # updating self.r_
-        self.r_ = r_
         return None
 
     def energy_production(self):
         """
-        Calculating energy generation per unit mass for all reactions
+        Calculating energy generation per unit mass for all PP branches and the CNO cycle
         """
-        eps = self.eps
-        for i in range(7):
-            eps[i] = self.r_[i]*self.Q[i]
 
-        print("Energy production energy output from each individual reaction in the PP chain and CNO cycle. ")
-        print(f"PP0: {eps[0]:15.2} W/kg")
-        print(f"PP1: {eps[1]:15.2} W/kg")
-        print(f"PP2: {eps[2] + eps[3] + eps[4]:15.2} W/kg")
-        print(f"PP3: {eps[2] + eps[5]:15.2} W/kg")
-        print(f"CNO: {eps[6]:15.2} W/kg")
-        return None
+        PP1 = (2 * self.Q[0] + self.Q[1]) * self.r_[1]
+        PP2 = (self.Q[0] + self.Q[2]) * self.r_[2] + self.Q[3] * self.r_[3] + self.Q[4] * self.r_[4]
+        PP3 = (self.Q[0] + self.Q[2]) * self.r_[2] + self.Q[5] * self.r_[5]
+        CNO = self.r_[6]*self.Q[6]
+
+        return PP1, PP2, PP3, CNO
 
     def _sanitycheck(self, exp):
         """
@@ -180,7 +174,7 @@ class energy:
         exp5 = exp[5]
         exp6 = exp[6]
 
-        #
+        # results
         res0 = rho*r_[0]*Q[0]
         res1 = rho*r_[1]*Q[1]
         res2 = rho*r_[2]*Q[2]
@@ -210,28 +204,31 @@ if __name__ == "__main__":
     A = energy(T, rho)
     A.reaction_rates()
     A._sanitycheck([4.04*1e2, 8.68*1e-9, 4.86*1e-5, 1.49*1e-6, 5.29*1e-4, 1.63*1e-6, 9.18*1e-8])
-    A.energy_production()
+    energy_productionA = A.energy_production()
     """ Output:
     Sanity check for T = 15700000.0 K and rho = 162000.0 kg/m^3
     |  Results        |Expected Values          |Sanity test passed?
     |           4e+02 |           4e+02         |   True
-    |          8.7e-09 |         8.7e-09         |   True
+    |         8.7e-09 |         8.7e-09         |   True
     |        4.87e-05 |         4.9e-05         |   True
     |       1.496e-06 |         1.5e-06         |   True
     |      0.00052967 |         0.00053         |   True
     |     1.63865e-06 |         1.6e-06         |   True
     |    9.184337e-08 |         9.2e-08         |   True
-
-     Energy production energy output from each individual reaction in the PP chain and CNO cycle.
-     PP0:          0.0025 J/kgs
-     PP1:         5.4e-14 J/kgs
-     PP2:         3.6e-09 J/kgs
-     PP3:         3.1e-10 J/kgs
-     CNO:         5.7e-13 J/kgs
      """
-
 
     B = energy(1e8, rho)
     B.reaction_rates()
     B._sanitycheck([7.34e4, 1.09e0, 1.74e4, 1.22e-3, 4.35e-1, 1.26e5, 3.45e4])
-    B.energy_production()
+    energy_productionB = B.energy_production()
+    """
+    Sanity check for T = 100000000.0 K and rho = 162000.0 kg/m^3
+   |  Results        |Expected Values          |Sanity test passed?
+   |         7.3e+04 |         7.3e+04         |   True
+   |             1.1 |             1.1         |   True
+   |        1.75e+04 |         1.7e+04         |   True
+   |         0.00123 |          0.0012         |   True
+   |         0.43531 |            0.43         |   True
+   |     1.26546e+05 |         1.3e+05         |   True
+   |        34546.97 |         3.4e+04         |   True
+   """
