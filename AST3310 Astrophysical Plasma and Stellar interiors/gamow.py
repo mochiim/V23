@@ -39,7 +39,7 @@ def gamow(m_i, m_k, Z_i, Z_k, E):
     gamow = lmbda*sigma
     peak = gamow[np.where(gamow == np.max(gamow))[0][0]]
 
-    return gamow  / peak # normalized
+    return gamow  / peak # normalized Gamow peak
 
 n = 1000
 E = np.logspace(-17, -13, n) # energy interval [J]

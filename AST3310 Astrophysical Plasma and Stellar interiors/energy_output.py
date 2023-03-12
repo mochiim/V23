@@ -94,15 +94,15 @@ E_PP2 = np.sum(PP0) + np.sum(PP2)
 E_PP3 = np.sum(PP0) + np.sum(PP3)
 E_CNO = np.sum(CNO)
 
-# computing the neutrino energy
-nu_PP1 = 2*pp0 + np.sum(PP_Q[2, 0])
-nu_PP2 = pp0 + np.sum(PP_Q[3:6, 0])
-nu_PP3 = pp0 + np.sum(PP_Q[6:, 0])
-nu_CNO = np.sum(CNO_Q[:, 0])
+# computing the energy released, Q'
+Q_PP1 = 2*pp0 + np.sum(PP_Q[2, 0])
+Q_PP2 = pp0 + np.sum(PP_Q[3:6, 0])
+Q_PP3 = pp0 + np.sum(PP_Q[6:, 0])
+Q_CNO = np.sum(CNO_Q[:, 0])
 
 names = ["PP1", "PP2", "PP3", "CNO"]
 dE = [E_PP1, E_PP2, E_PP3, E_CNO]
-neutrino = [E_PP1 - nu_PP1, E_PP2 - nu_PP2, E_PP3 - nu_PP3, E_CNO - nu_CNO]
+neutrino = [E_PP1 - Q_PP1, E_PP2 - Q_PP2, E_PP3 - Q_PP3, E_CNO - Q_CNO]
 
 print("Branch | Mass difference [MeV] | Neutrino energy [MeV] | Percentage loss ")
 for i in range(4):
