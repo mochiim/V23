@@ -210,35 +210,43 @@ if __name__ == "__main__":
     A.reaction_rates()
     A._sanitycheck([4.04*1e2, 8.68*1e-9, 4.86*1e-5, 1.49*1e-6, 5.29*1e-4, 1.63*1e-6, 9.18*1e-8])
     energy_productionA = A.energy_production()
-    """ Output:
-    Sanity check for T = 15700000.0 K and rho = 162000.0 kg/m^3
-    |  Results        |Expected Values          |Sanity test passed?
-    |           4e+02 |           4e+02         |   True
-    |         8.7e-09 |         8.7e-09         |   True
-    |        4.87e-05 |         4.9e-05         |   True
-    |       1.496e-06 |         1.5e-06         |   True
-    |      0.00052967 |         0.00053         |   True
-    |     1.63865e-06 |         1.6e-06         |   True
-    |    9.184337e-08 |         9.2e-08         |   True
-     Branch  |   Energy production [kg^-1 s^-1]
-     PP1      |   1.38e-05 J
-PP1      |   0.561
-PP1      |   1.34
-PP1      |   0.213
-     """
+"""
+Sanity check for T = 15700000.0 K and rho = 162000.0 kg/m^3
+ |  Results        |Expected Values          |Sanity test passed?
+ |           4e+02 |           4e+02         |   True
+ |         8.7e-09 |         8.7e-09         |   True
+ |        4.87e-05 |         4.9e-05         |   True
+ |       1.496e-06 |         1.5e-06         |   True
+ |       0.0005297 |         0.00053         |   True
+ |     1.63874e-06 |         1.6e-06         |   True
+ |    9.184815e-08 |         9.2e-08         |   True
+
+ Branch  |   Energy production [J kg^-1 s^-1]
+PP1      |   1.09e-13
+PP1      |   4.84e-09
+PP1      |   1.57e-09
+PP1      |   5.67e-13
+"""
 
     B = energy(1e8, rho)
     B.reaction_rates()
     B._sanitycheck([7.34e4, 1.09e0, 1.74e4, 1.22e-3, 4.35e-1, 1.26e5, 3.45e4])
     energy_productionB = B.energy_production()
-    """
-    Sanity check for T = 100000000.0 K and rho = 162000.0 kg/m^3
-   |  Results        |Expected Values          |Sanity test passed?
-   |         7.3e+04 |         7.3e+04         |   True
-   |             1.1 |             1.1         |   True
-   |        1.75e+04 |         1.7e+04         |   True
-   |         0.00123 |          0.0012         |   True
-   |         0.43531 |            0.43         |   True
-   |     1.26546e+05 |         1.3e+05         |   True
-   |        34546.97 |         3.4e+04         |   True
-   """
+
+"""
+Sanity check for T = 100000000.0 K and rho = 162000.0 kg/m^3
+ |  Results        |Expected Values          |Sanity test passed?
+ |         7.3e+04 |         7.3e+04         |   True
+ |             1.1 |             1.1         |   True
+ |        1.75e+04 |         1.7e+04         |   True
+ |         0.00123 |          0.0012         |   True
+ |         0.43533 |            0.43         |   True
+ |     1.26552e+05 |         1.3e+05         |   True
+ |        34548.77 |         3.4e+04         |   True
+
+ Branch  |   Energy production [J kg^-1 s^-1]
+PP1      |   1.38e-05
+PP1      |   0.561
+PP1      |   1.34
+PP1      |   0.213
+"""

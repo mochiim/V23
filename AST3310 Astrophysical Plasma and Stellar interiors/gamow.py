@@ -2,10 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.constants as const
 
-"""
-This script will calculate the Gamow peak for all the reactions of the PP chain and CNO cycle
-"""
-
 plt.rcParams['font.size'] = 16 # font size of plots
 
 # defining physical constants
