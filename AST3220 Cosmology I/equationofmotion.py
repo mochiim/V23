@@ -131,28 +131,23 @@ def age_of_universe(Hubble_parameter):
 z_dL = np.linspace(0, 2, 1000)
 
 def luminosity_distance(Hubble_parameter):
+    """
+    Computing the luminosity distance for a given Hubble parameter
+    """
     integration  = cumulative_trapezoid(1/Hubble_parameter, z_dL, initial = 0)
     dL = (1 + z_dL) * integration
     return dL
 
 """ problem 12 """
-#dL_power = luminosity_distance(H_power)
-#dL_exp = luminosity_distance(H_exp)
-#plt.plot(z_dL, dL_power)
-#plt.plot(z_dL, dL_exp)
+dL_power = luminosity_distance(H_power)
+dL_exp = luminosity_distance(H_exp)
+plt.plot(z_dL, dL_power)
+plt.plot(z_dL, dL_exp)
 
 
 """ problem 13 """
 z_data, dL_data, error_data = np.loadtxt('/Users/rebeccanguyen/Documents/GitHub/V23/AST3220 Cosmology I/sndata.txt', skiprows=5, unpack=True)
 
-def chisquared():
-    chi = 0
-
-    for i in range(31):
-        chi += (luminosity_distance(z_data[i]) - dL_data[i]**2) / error_data[i]**2
-    return chi
-
-chisquared()
 
 #plt.plot(z_data, dL_data)
 #for i in error_data:

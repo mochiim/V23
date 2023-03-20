@@ -1,7 +1,6 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from tabulate import tabulate
 
 plt.style.use("seaborn")       # aestethic for plotting
 plt.rcParams["font.size"] = 16 # font size of plots
