@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp, cumulative_trapezoid, simpson, quad
 from tabulate import tabulate
+from scipy.interpolate import CubicSpline
 
 plt.style.use("seaborn")       # aestethic for plotting
 plt.rcParams["font.size"] = 16 # font size of plots
@@ -149,13 +150,14 @@ def luminosity_distance(Hubble_parameter):
 z_dL, dL_power = luminosity_distance(H_power)  # unitless
 z_dL, dL_exp = luminosity_distance(H_exp)      # unitless
 
-plt.plot(z_dL, dL_power, label = "Power law potential")
-plt.plot(z_dL, dL_exp, label = "Exponential potential")
-plt.ylabel(r"$H_0d_L/c$")
-plt.xlabel("z")
-plt.title("Luminosity distance")
-plt.savefig("luminosity_distance.png")
-plt.legend()
+#plt.plot(z_dL, dL_power, label = "Power law potential")
+#plt.plot(z_dL, dL_exp, label = "Exponential potential")
+#plt.ylabel(r"$H_0d_L/c$")
+#plt.xlabel("z")
+#plt.title("Luminosity distance")
+#plt.legend()
+#plt.savefig("lum_dis.png")
+
 
 
 """ problem 13 """
@@ -166,6 +168,20 @@ h = 0.7
 # luminosity distance converted to units of length
 dL_power_adjusted = dL_power*(3/h)   # [Gpc]
 dL_exp_adjusted = dL_exp*(3/h)       # [Gpc]
+
+
+def chisquared(model):
+    z_dL, dL = model
+    chi = 0
+    for i, z in enumerate(z_data):
+        interpol = CubicSpline(np.flip(z_dL), np.flip(dL))
+        value = np.interp(z, np.flip(z_dL), interpol(np.flip(z_dL)))
+        chi += (value - dL_data[i])**2 / error_data[i]**2
+    return chi
+
+
+chisquared_pwr = chisquared([z_dL, dL_power_adjusted])
+chisquared_exp = ([z_dL, dL_exp_adjusted])
 
 #plt.plot(z_dL, dL_exp_adjusted, label = "Exponential potential")
 #plt.plot(z_dL, dL_power_adjusted, label = "Power law potential")
