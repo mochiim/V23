@@ -16,18 +16,41 @@ g = 9.81    # gravitational acceleration [m/s^2]
 I = m1*l1**2 + m2*l2**2
 MR = m1*l1 - m2*l2
 
-t = np.linspace(-1e5, 1e5, 1000)
-theta_i = 5*np.pi/6     # initial condition for angle theta
-p_i = 0                 # initial condition for momentum
+t = np.linspace(0, 10, 10000)
+theta_i = 5*np.pi/6             # initial condition for angle theta
+p_i = 0                         # initial condition for momentum
+init = np.array([theta_i, p_i]) # initial conditions
 
-theta_f = np.linspace(0, 2*np.pi, 1000)
 L_max = 2*(m1/m2)*l1*(1 - np.cos(theta_i))
 
-def hamiltons_eq(theta):
+def H(t, Y):
+    theta, p = Y
     thetadot = p/I
     pdot = - MR*g*np.sin(theta)
     return [thetadot, pdot]
 
-sol = solve_ivp(hamiltons_eq, t, [theta_i, p_i])
-theta = sol[0, :]
-p = sol[1, :]
+sol = solve_ivp(H, [0, 10], init, method = 'RK45', rtol = 1e-8, atol = 1e-8, dense_output = True)
+Y = sol.sol(t)
+theta, p = Y
+
+thetadot = p/I
+
+#v = -l2*thetadot*np.cos(theta)
+v = thetadot*l2
+
+L = (v**2 * np.sin(2*theta))/g
+
+epsilon = L/L_max # range efficiency
+
+
+idx = np.where(epsilon == np.max(epsilon))[0][0]
+print(f"Maximum efficiency is {epsilon[idx]} at angle {theta[idx]}")
+
+#plt.plot(theta, p)
+plt.plot(theta, epsilon)
+plt.xlabel(r"$\theta$")
+plt.ylabel(r"$\epsilon_L$")
+plt.text(epsilon[idx] + .5, theta[idx] + .5, "hei")
+plt.title(r"Range efficiency for $\theta_i= 5\pi/6$")
+#plt.savefig("h1.png")
+plt.show()

@@ -128,33 +128,58 @@ def age_of_universe(Hubble_parameter):
 
 
 """ Luminosity distance """
-z_dL = np.linspace(0, 2, 1000)
 
 def luminosity_distance(Hubble_parameter):
     """
     Computing the luminosity distance for a given Hubble parameter
     """
-    integration  = cumulative_trapezoid(1/Hubble_parameter, z_dL, initial = 0)
-    dL = (1 + z_dL) * integration
-    return dL
+    search = np.logical_and(N <= - np.log(3) + 1e-2, N  >= - np.log(3) - 1e-2)
+    idx = np.where(search == True)[0][0]
+    N_reduced = N[idx:]
+    H = Hubble_parameter[idx:]
+    integration = cumulative_trapezoid(np.exp(- N_reduced)/H, N_reduced, initial = 0)
+    dL = np.exp(- N_reduced)*np.flip(integration)
+
+    z_dL = z[idx:]
+
+    return z_dL, dL
 
 """ problem 12 """
-dL_power = luminosity_distance(H_power)
-dL_exp = luminosity_distance(H_exp)
-plt.plot(z_dL, dL_power)
-plt.plot(z_dL, dL_exp)
+
+z_dL, dL_power = luminosity_distance(H_power)  # unitless
+z_dL, dL_exp = luminosity_distance(H_exp)      # unitless
+
+plt.plot(z_dL, dL_power, label = "Power law potential")
+plt.plot(z_dL, dL_exp, label = "Exponential potential")
+plt.ylabel(r"$H_0d_L/c$")
+plt.xlabel("z")
+plt.title("Luminosity distance")
+plt.savefig("luminosity_distance.png")
+plt.legend()
 
 
 """ problem 13 """
 z_data, dL_data, error_data = np.loadtxt('/Users/rebeccanguyen/Documents/GitHub/V23/AST3220 Cosmology I/sndata.txt', skiprows=5, unpack=True)
 
+h = 0.7
 
-#plt.plot(z_data, dL_data)
+# luminosity distance converted to units of length
+dL_power_adjusted = dL_power*(3/h)   # [Gpc]
+dL_exp_adjusted = dL_exp*(3/h)       # [Gpc]
+
+#plt.plot(z_dL, dL_exp_adjusted, label = "Exponential potential")
+#plt.plot(z_dL, dL_power_adjusted, label = "Power law potential")
+#plt.plot(z_data, dL_data, label = "Data")
+
 #for i in error_data:
 #    plt.fill_between(z_data, dL_data + i, dL_data - i, alpha=0.2)
+
 #plt.xlabel("z")
 #plt.ylabel(r"$d_L$ [Gpc]")
 #plt.title("Measured luminosity ditsance with assosiated errors")
 #plt.savefig("sndata.png")
+#plt.title("Luminosity distance of quintessence compared to data")
+#plt.legend()
+#plt.savefig("luminosity_distance_with_data.png")
 
 plt.show()
