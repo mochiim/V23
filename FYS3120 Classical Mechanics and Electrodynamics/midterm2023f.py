@@ -35,25 +35,4 @@ plt.title("Trebuchet")
 #plt.savefig("g.png")
 """
 
-t = np.linspace(-1e5, 1e5, 1000)
-theta_i = 5*np.pi/6     # initial condition for angle theta
-p_i = 0                 # initial condition for momentum
-
-theta_f = np.linspace(0, 2*np.pi, 1000)
-L_max = 2*(m1/m2)*l1*(1 - np.cos(theta_i))
-
-def hamiltons_eq(theta):
-    thetadot = p/I
-    pdot = - MR*g*np.sin(theta)
-    return [thetadot, pdot]
-
-sol = solve_ivp(hamiltons_eq, t, [theta_i, p_i])
-theta = sol[0, :]
-p = sol[1, :]
-
-
-
-
-
-
 plt.show()
