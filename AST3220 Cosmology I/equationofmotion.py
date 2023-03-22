@@ -71,7 +71,7 @@ N = np.linspace(-np.log(1 + 2e7), 0, steps)
 # convert N back to z
 z = np.exp(- N) - 1
 
-# computation of density parameter and EoS for two Quintessence models
+# computation of density parameter and EoS for two Quintessence models in order [omega_m, omega_phi, omega_r, w_phi]
 variables_power = integration(power_law_potential, np.array([5e-5, 1e-8, .9999, 1e9]))
 variables_exp = integration(exponential_potential, np.array([0, 5e-13, .9999]))
 
@@ -158,12 +158,12 @@ z_dL, dL_exp = luminosity_distance(H_exp)      # unitless
 #plt.legend()
 #plt.savefig("lum_dis.png")
 
+""" Chi squared """
 
-
-""" problem 13 """
+# reading data file
 z_data, dL_data, error_data = np.loadtxt('/Users/rebeccanguyen/Documents/GitHub/V23/AST3220 Cosmology I/sndata.txt', skiprows=5, unpack=True)
 
-h = 0.7
+h = 0.7 # given in task description
 
 # luminosity distance converted to units of length
 dL_power_adjusted = dL_power*(3/h)   # [Gpc]
@@ -174,28 +174,55 @@ def chisquared(model):
     z_dL, dL = model
     chi = 0
     for i, z in enumerate(z_data):
+        # interpolating data from problem 13 [Gpc]
         interpol = CubicSpline(np.flip(z_dL), np.flip(dL))
+
+        # finding d_L in interpolated array for a given z value from data
         value = np.interp(z, np.flip(z_dL), interpol(np.flip(z_dL)))
+
         chi += (value - dL_data[i])**2 / error_data[i]**2
     return chi
 
+""" problem 13 """
+#chisquared_pwr = chisquared([z_dL, dL_power_adjusted])
+#chisquared_exp = chisquared([z_dL, dL_exp_adjusted])
 
-chisquared_pwr = chisquared([z_dL, dL_power_adjusted])
-chisquared_exp = ([z_dL, dL_exp_adjusted])
+#chisqrt = [["Value of χ2 for power potential", chisquared_pwr], ["Value of χ2 for exponential potential", chisquared_exp]]
+#print(tabulate(chisqrt))
 
-#plt.plot(z_dL, dL_exp_adjusted, label = "Exponential potential")
-#plt.plot(z_dL, dL_power_adjusted, label = "Power law potential")
+
 #plt.plot(z_data, dL_data, label = "Data")
 
 #for i in error_data:
 #    plt.fill_between(z_data, dL_data + i, dL_data - i, alpha=0.2)
 
+#plt.title("Measured luminosity distance with assosiated errors")
+
+#plt.plot(z_dL, dL_exp_adjusted, label = "Exponential potential")
+#plt.plot(z_dL, dL_power_adjusted, label = "Power law potential")
+#plt.title("Luminosity distance of quintessence compared to data")
+
 #plt.xlabel("z")
 #plt.ylabel(r"$d_L$ [Gpc]")
-#plt.title("Measured luminosity ditsance with assosiated errors")
-#plt.savefig("sndata.png")
-#plt.title("Luminosity distance of quintessence compared to data")
 #plt.legend()
-#plt.savefig("luminosity_distance_with_data.png")
 
-plt.show()
+""" Determine value of Ωm0 which provides the best fit """
+def best_value():
+    omegas = np.linspace(0, 1, 1000)
+    chi = np.zeros(1000)
+    omega_m0CDM = np.zeros(1000)
+
+    for i in range(len(omegas)):
+        H_CDM = np.sqrt(omegas[i] * np.exp(-3 * N) + (1 - omegas[i]))
+        z, dL = luminosity_distance(H_CDM)
+        dL_new = dL*(3/h)
+        chi[i] = chisquared([z, dL_new])
+        omega_m0CDM[i] = omegas[i]
+
+    return chi, omega_m0CDM
+
+""" problem 14 """
+chi, omegas = best_value()
+print(np.argmin(chi))
+print(omegas[np.argmin(chi)])
+#plt.show()
