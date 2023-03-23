@@ -233,11 +233,13 @@ Value of χ2 for exponential potential  224.864
 """ Determine value of Ωm0 which provides the best fit """
 def best_value():
     omegas = np.linspace(0, 1, 1000) # potential values
+
+    # creating arrays for storing values
     chi = np.zeros(1000)
     omega_m0CDM = np.zeros(1000)
 
     for i in range(len(omegas)):
-        H_CDM = np.sqrt(omegas[i] * np.exp(-3 * N) + (1 - omegas[i])) # Hubble parameter
+        H_CDM = np.sqrt(omegas[i] * np.exp(-3 * N) + (1 - omegas[i])) # Hubble parameter for a given omega
         z, dL = luminosity_distance(H_CDM)                            # luminosity distance [-]
         dL_new = dL*(3/h)                                             # luminosity distance [Gpc]
         chi[i] = chisquared([z, dL_new])
