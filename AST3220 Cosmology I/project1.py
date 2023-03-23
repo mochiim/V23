@@ -12,9 +12,6 @@ plt.rcParams["lines.linewidth"] = 2  # line width of plots
 """ Density parameters and equation of state """
 
 def power_law_potential(N, parameters):
-    """
-    KOMMENTER
-    """
     x1, x2, x3, lmbda = parameters
 
     dx1 = - 3*x1 + (np.sqrt(6)/2)*lmbda*x2**2 + .5*x1*(3 + 3*x1**2 - 3*x2**2 + x3**2)
@@ -48,7 +45,7 @@ def integration(function, init):
     # solve for x1, x2 and x3
     exes = solve.sol(N)
 
-    # unpack exes and asign names
+    # unpack exes and assign names
     x1 = exes[0, :]
     x2 = exes[1, :]
     x3 = exes[2, :]
@@ -63,15 +60,15 @@ def integration(function, init):
 
     return omega_m, omega_phi, omega_r, w_phi
 
-# we define a new variable N for easier calculation
-N_span = [-np.log(1 + 2e7), 0]
+# substitute N for z and flipping the integration interval for convenience
+N_span = [-np.log(1 + 2e7), 0] # equiv. to [2e7, 0]
 steps = 1000
 N = np.linspace(-np.log(1 + 2e7), 0, steps)
 
-# convert N back to z
+# convert N back to z for plotting purposes
 z = np.exp(- N) - 1
 
-# computation of density parameter and EoS for two Quintessence models in order [omega_m, omega_phi, omega_r, w_phi]
+# computation of density parameter and EoS for two quintessence models: [omega_m, omega_phi, omega_r, w_phi]
 variables_power = integration(power_law_potential, np.array([5e-5, 1e-8, .9999, 1e9]))
 variables_exp = integration(exponential_potential, np.array([0, 5e-13, .9999]))
 
@@ -117,27 +114,45 @@ H_CDM = np.sqrt(omega_m0CDM * np.exp(-3 * N) + (1 - omega_m0CDM))
 
 """ Age of the universe """
 def age_of_universe(Hubble_parameter):
+    """
+    Computing the dimensionless age of the Universe
+    """
     t_0 = simpson(1/Hubble_parameter, N)
     return t_0
 
+
 """ problem 11 """
-#t_exp = age_of_universe(H_exp)
-#t_power = age_of_universe(H_power)
-#t_CDM = age_of_universe(H_CDM)
-#age = [["Quintessence: exponential", t_exp], ["Quintessence: power law", t_power], ["LCDM", t_CDM]]
+t_exp = age_of_universe(H_exp)
+t_power = age_of_universe(H_power)
+t_CDM = age_of_universe(H_CDM)
+age = [["Quintessence: exponential", t_exp], ["Quintessence: power law", t_power], ["LCDM", t_CDM]]
 #print(tabulate(age))
+"""
+Terminal output:
+-------------------------  --------
+Quintessence: exponential  0.972921
+Quintessence: power law    0.993174
+LCDM                       0.964099
+-------------------------  --------
+"""
 
 
 """ Luminosity distance """
+# in this task, we are only interested in z = [0, 2]
 
 def luminosity_distance(Hubble_parameter):
     """
-    Computing the luminosity distance for a given Hubble parameter
+    Computing the dimensionless luminosity distance for a given Hubble parameter (H/H0)
     """
+
+    # finding index in N-array where N = -np.log(3), equivalent to z = 2
     search = np.logical_and(N <= - np.log(3) + 1e-2, N  >= - np.log(3) - 1e-2)
     idx = np.where(search == True)[0][0]
+
+    # shortening N-array from [0, 2e7] to [0, 2], as well as Hubble parameter array
     N_reduced = N[idx:]
     H = Hubble_parameter[idx:]
+
     integration = cumulative_trapezoid(np.exp(- N_reduced)/H, N_reduced, initial = 0)
     dL = np.exp(- N_reduced)*np.flip(integration)
 
@@ -165,7 +180,7 @@ z_data, dL_data, error_data = np.loadtxt('/Users/rebeccanguyen/Documents/GitHub/
 
 h = 0.7 # given in task description
 
-# luminosity distance converted to units of length
+# luminosity distance for both quintessence models converted to units of length
 dL_power_adjusted = dL_power*(3/h)   # [Gpc]
 dL_exp_adjusted = dL_exp*(3/h)       # [Gpc]
 
@@ -174,24 +189,33 @@ def chisquared(model):
     z_dL, dL = model
     chi = 0
     for i, z in enumerate(z_data):
-        # interpolating data from problem 13 [Gpc]
+        # interpolating computed luminosity distance for both quintessence models
         interpol = CubicSpline(np.flip(z_dL), np.flip(dL))
 
-        # finding d_L in interpolated array for a given z value from data
+        # finding d_L in interpolated array for a given z value from sndata.txt
         value = np.interp(z, np.flip(z_dL), interpol(np.flip(z_dL)))
 
+        # computing chi squared
         chi += (value - dL_data[i])**2 / error_data[i]**2
     return chi
 
 """ problem 13 """
-#chisquared_pwr = chisquared([z_dL, dL_power_adjusted])
-#chisquared_exp = chisquared([z_dL, dL_exp_adjusted])
+chisquared_pwr = chisquared([z_dL, dL_power_adjusted])
+chisquared_exp = chisquared([z_dL, dL_exp_adjusted])
 
-#chisqrt = [["Value of χ2 for power potential", chisquared_pwr], ["Value of χ2 for exponential potential", chisquared_exp]]
+chisqrt = [["Value of χ2 for power potential", chisquared_pwr], ["Value of χ2 for exponential potential", chisquared_exp]]
 #print(tabulate(chisqrt))
 
+"""
+Terminal output:
+-------------------------------------  -------
+Value of χ2 for power potential        240.641
+Value of χ2 for exponential potential  224.864
+-------------------------------------  -------
+"""
 
 #plt.plot(z_data, dL_data, label = "Data")
+#plt.plot(z_dL, luminosity_distance(H_CDM)[1]*(3/h), label = r"$\Lambda CDM$")
 
 #for i in error_data:
 #    plt.fill_between(z_data, dL_data + i, dL_data - i, alpha=0.2)
@@ -200,7 +224,7 @@ def chisquared(model):
 
 #plt.plot(z_dL, dL_exp_adjusted, label = "Exponential potential")
 #plt.plot(z_dL, dL_power_adjusted, label = "Power law potential")
-#plt.title("Luminosity distance of quintessence compared to data")
+#plt.title(r"Data compared to quintessence and $\Lambda$CDM")
 
 #plt.xlabel("z")
 #plt.ylabel(r"$d_L$ [Gpc]")
@@ -208,14 +232,14 @@ def chisquared(model):
 
 """ Determine value of Ωm0 which provides the best fit """
 def best_value():
-    omegas = np.linspace(0, 1, 1000)
+    omegas = np.linspace(0, 1, 1000) # potential values
     chi = np.zeros(1000)
     omega_m0CDM = np.zeros(1000)
 
     for i in range(len(omegas)):
-        H_CDM = np.sqrt(omegas[i] * np.exp(-3 * N) + (1 - omegas[i]))
-        z, dL = luminosity_distance(H_CDM)
-        dL_new = dL*(3/h)
+        H_CDM = np.sqrt(omegas[i] * np.exp(-3 * N) + (1 - omegas[i])) # Hubble parameter
+        z, dL = luminosity_distance(H_CDM)                            # luminosity distance [-]
+        dL_new = dL*(3/h)                                             # luminosity distance [Gpc]
         chi[i] = chisquared([z, dL_new])
         omega_m0CDM[i] = omegas[i]
 
@@ -223,6 +247,13 @@ def best_value():
 
 """ problem 14 """
 chi, omegas = best_value()
-print(np.argmin(chi))
-print(omegas[np.argmin(chi)])
+#print(f"Lowest value from chi squared method {chi[np.argmin(chi)]: .3f}")
+#print(f"Corresponding omega_m0LCDM value: {omegas[np.argmin(chi)]: .3f}")
+
+"""
+Terminal output:
+Lowest value from chi squared method  32.960
+Corresponding omega_m0LCDM value:  0.303
+"""
+
 #plt.show()
