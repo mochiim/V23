@@ -176,12 +176,7 @@ z_dL, dL_exp = luminosity_distance(H_exp)      # unitless
 """ Chi squared """
 
 # reading data file
-
-# I had some issues finding the txt file with the data. So to read the file the
-# entire path for reading the file was written, meaning my name included. I have
-# therefore removed the filename here to keep my identity anonymous.
-z_data, dL_data, error_data = np.loadtxt('', skiprows=5, unpack=True)
-
+z_data, dL_data, error_data = np.loadtxt('/Users/rebeccanguyen/Documents/GitHub/V23/AST3220 Cosmology I/sndata.txt', skiprows=5, unpack=True)
 
 h = 0.7 # given in task description
 
