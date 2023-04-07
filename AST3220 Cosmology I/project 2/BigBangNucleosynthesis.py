@@ -1,7 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import astropy.constants as const
-from scipy.integrate import solve_ivp, quad
+from scipy.integrate import solve_ivp
+from scipy import interpolate
 
 plt.style.use("seaborn")
 plt.rcParams['font.size'] = 20
@@ -243,9 +244,9 @@ class BigBangNucleosynthesis():
         Y_n_Ti = (1 + np.exp((self.m_n - self.m_p)*self.c**2/self.k*T_i ))**(-1) # from task e)
         Y_p_Ti = 1 - Y_n_Ti
 
-        YD, YT, YHe3, YHe4, YLi7, YBe7 = 0, 0, 0, 0, 0, 0
+        YD = YT = YHe3 = YHe4 = YLi7 = YBe7 = 0
 
-        solve = solve_ivp(self.differentials_i, t_span=[np.log(T_i), np.log(T_f)], y0=[Y_n_Ti, Y_p_Ti, YD, YT, YHe3, YHe4, YLi7, YBe7], method='Radau', rtol=1e-12, atol=1e-12)
+        solve = solve_ivp(self.differentials_i, [np.log(T_i), np.log(T_f)], [Y_n_Ti, Y_p_Ti, YD, YT, YHe3, YHe4, YLi7, YBe7], method='Radau', rtol=1e-12, atol=1e-12)
 
         T = np.exp(solve.t)
         Y_n = solve.y[0]
@@ -270,7 +271,75 @@ class BigBangNucleosynthesis():
         plt.xlim([T[0], T[-1]]); plt.ylim([1e-11, 1e1])
         plt.legend()
         plt.tight_layout()
-        plt.savefig('i.png')
+        #plt.savefig('i.png')
+
+# Task j
+    def taskk(self, N):
+        """
+        The purpose of this task is to compute the relic abundances in the range Omega_b0 = [0.01, 1] and
+        compare with measurements using chi-squared-method. This method will also give us the most probable calue for Omega_b0
+        """
+        # observed values (value, min, max, error)
+        data_Y_D_Y_p = (2.57e-5, (2.57 - .03)*1e-5, (2.57 + .03)*1e-5, .03e-5)
+        data_Y_He4 = (.254, .254 - .003, .254 + .003, .003)
+        data_Y_Li7_Y_p = (1.6e-10, (1.6 - 0.3)*1e-10, (1.6 + 0.3)*1e-10, .3e-5)
+
+        omegas = np.logspace(-2, 0, N) # almost equivalent to [0.01, 1]
+
+        T = Y_n = Y_p = Y_D = Y_T = Y_He3 = Y_He4 = Y_T = Y_Li7 = Y_Be7 = np.zeros(N)
+
+        for i, omega in enumerate(omegas):
+            omega_b0 = omega
+            T_i = 100e9
+            T_f = .01e9 # changed the initial conditions to reproduce the plot in the exercise.
+
+            Y_n_Ti = (1 + np.exp((self.m_n - self.m_p)*self.c**2/self.k*T_i ))**(-1) # from task e)
+            Y_p_Ti = 1 - Y_n_Ti
+
+            YD = YT = YHe3 = YHe4 = YLi7 = YBe7 = 0
+
+            solve = solve_ivp(self.differentials_i, [np.log(T_i), np.log(T_f)], [Y_n_Ti, Y_p_Ti, YD, YT, YHe3, YHe4, YLi7, YBe7], method='Radau', rtol=1e-12, atol=1e-12)
+
+            T[i]     = np.exp(solve.t[0])
+
+            # lower bound on Y_i of 1e-20 to avoid possible numerical errors
+            Y_n[i]   = np.max([solve.y[0][-1], 1e-20])
+            Y_p[i]   = np.max([solve.y[1][-1], 1e-20])
+            Y_D[i]   = np.max([solve.y[2][-1], 1e-20])
+            Y_T[i]   = np.max([solve.y[3][-1], 1e-20])
+            Y_He3[i] = np.max([solve.y[4][-1], 1e-20])
+            Y_He4[i] = np.max([solve.y[5][-1], 1e-20])
+            Y_Li7[i] = np.max([solve.y[6][-1], 1e-20])
+            Y_Be7[i] = np.max([solve.y[7][-1], 1e-20])
+
+        # interpolate computed values for smoother plot
+        # we interpolate the logarithm of the computed values to make the program run faster
+        interp_Y_D_Y_p = interpolate.interp1d(np.log(omegas), np.log(Y_D/Y_p), kind = "cubic", fill_value="extrapolate")
+        interp_Y_He4 = interpolate.interp1d(np.log(omegas), np.log(4*Y_He4), kind = "cubic", fill_value="extrapolate")
+        interp_Y_Li7_Y_p = interpolate.interp1d(np.log(omegas), np.log(Y_Li7/Y_p), kind = "cubic", fill_value="extrapolate")
+        interp_Y_He3 = interpolate.interp1d(np.log(omegas), np.log(Y_He3 + Y_T), kind = "cubic", fill_value="extrapolate")
+
+        # preparing for plotting
+        x = np.logspace(-2, 0, 1000) # to match the plot we want to reproduce
+        # retrieve the actual values by taking the exponential of all values
+        plot_Y_D_Y_p = np.exp(interp_Y_D_Y_p(np.log(x)))
+        plot_Y_He4 = np.exp(interp_Y_He4(np.log(x)))
+        plot_Y_Li7_Y_p = np.exp(interp_Y_Li7_Y_p(np.log(x)))
+        plot_Y_He3 = np.exp(interp_Y_He3(np.log(x)))
+
+        fig, ax = plt.subplots(nrows = 3, figsize = (6, 6), sharex = True, gridspec_kw={'height_ratios': [1, 3, 1]})
+
+        ax[0].axhspan(data_Y_He4[1], data_Y_He4[2], alpha = .3)
+
+        ax[0].plot(x, plot_Y_He4, label = r"He$^4$")
+        ax[0].set_ylim([0.20, 0.30]); ax[0].set_xlim([1e-2, 1e0])
+        ax[0].set_xscale("log"); ax[0].set_yscale("log")
+
+
+
+        return None
+
+# Task k
 
 ########## reaction rates from table 2 in "ON THE SYNTHESIS OF ELEMENTS AT VERY HIGH TEMPERATURES" ##########
     def lambda_w(self, T, type):
@@ -528,5 +597,6 @@ class BigBangNucleosynthesis():
 
 #BigBangNucleosynthesis().taskf()
 #BigBangNucleosynthesis().taskh()
-BigBangNucleosynthesis().taski()
+#BigBangNucleosynthesis().taski()
+BigBangNucleosynthesis().taskk(5)
 plt.show()
