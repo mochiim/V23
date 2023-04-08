@@ -271,10 +271,10 @@ class BigBangNucleosynthesis():
         plt.xlim([T[0], T[-1]]); plt.ylim([1e-11, 1e1])
         plt.legend()
         plt.tight_layout()
-        #plt.savefig('i.png')
+        #plt.savefig("i.png")
 
 # Task j
-    def taskk(self, N):
+    def taskj(self, N):
         """
         The purpose of this task is to compute the relic abundances in the range Omega_b0 = [0.01, 1] and
         compare with measurements using chi-squared-method. This method will also give us the most probable calue for Omega_b0
@@ -284,19 +284,22 @@ class BigBangNucleosynthesis():
         data_Y_He4 = (.254, .254 - .003, .254 + .003, .003)
         data_Y_Li7_Y_p = (1.6e-10, (1.6 - 0.3)*1e-10, (1.6 + 0.3)*1e-10, .3e-5)
 
+        # possible omegas
         omegas = np.logspace(-2, 0, N) # almost equivalent to [0.01, 1]
 
-        T = Y_n = Y_p = Y_D = Y_T = Y_He3 = Y_He4 = Y_T = Y_Li7 = Y_Be7 = np.zeros(N)
+        T = np.zeros(N); Y_n = np.zeros(N); Y_p = np.zeros(N); Y_D = np.zeros(N); Y_T = np.zeros(N);
+        Y_He3 = np.zeros(N); Y_He4 = np.zeros(N); Y_Li7 = np.zeros(N); Y_Be7 = np.zeros(N)
 
         for i, omega in enumerate(omegas):
-            omega_b0 = omega
+            self.Omega_b0 = omega
+            # time span
             T_i = 100e9
-            T_f = .01e9 # changed the initial conditions to reproduce the plot in the exercise.
+            T_f = .01e9
 
-            Y_n_Ti = (1 + np.exp((self.m_n - self.m_p)*self.c**2/self.k*T_i ))**(-1) # from task e)
+            # initial conditions
+            Y_n_Ti = (1 + np.exp((self.m_n - self.m_p)*self.c**2/self.k*T_i))**(-1)
             Y_p_Ti = 1 - Y_n_Ti
-
-            YD = YT = YHe3 = YHe4 = YLi7 = YBe7 = 0
+            YD = 0; YT = 0; YHe3 = 0; YHe4 = 0; YLi7 = 0; YBe7 = 0
 
             solve = solve_ivp(self.differentials_i, [np.log(T_i), np.log(T_f)], [Y_n_Ti, Y_p_Ti, YD, YT, YHe3, YHe4, YLi7, YBe7], method='Radau', rtol=1e-12, atol=1e-12)
 
@@ -314,32 +317,173 @@ class BigBangNucleosynthesis():
 
         # interpolate computed values for smoother plot
         # we interpolate the logarithm of the computed values to make the program run faster
-        interp_Y_D_Y_p = interpolate.interp1d(np.log(omegas), np.log(Y_D/Y_p), kind = "cubic", fill_value="extrapolate")
-        interp_Y_He4 = interpolate.interp1d(np.log(omegas), np.log(4*Y_He4), kind = "cubic", fill_value="extrapolate")
-        interp_Y_Li7_Y_p = interpolate.interp1d(np.log(omegas), np.log(Y_Li7/Y_p), kind = "cubic", fill_value="extrapolate")
-        interp_Y_He3 = interpolate.interp1d(np.log(omegas), np.log(Y_He3 + Y_T), kind = "cubic", fill_value="extrapolate")
+        interp_Y_D_Y_p = interpolate.interp1d(np.log(omegas), np.log(Y_D / Y_p), kind='cubic')
+        interp_Y_He4= interpolate.interp1d(np.log(omegas), np.log(4 * Y_He4), kind='cubic')
+        interp_Y_Li7_Y_p = interpolate.interp1d(np.log(omegas), np.log((Y_Li7 + Y_Be7) / Y_p), kind='cubic')
+        interp_Y_He3= interpolate.interp1d(np.log(omegas), np.log(Y_He3 + Y_T), kind='cubic')
 
-        # preparing for plotting
-        x = np.logspace(-2, 0, 1000) # to match the plot we want to reproduce
-        # retrieve the actual values by taking the exponential of all values
-        plot_Y_D_Y_p = np.exp(interp_Y_D_Y_p(np.log(x)))
-        plot_Y_He4 = np.exp(interp_Y_He4(np.log(x)))
+        # prepare for plotting
+        x = np.logspace(-2, 0, 1000) # create a smoother linspace for plotting
+
+        # retrieve actual values from interpolation by taking the exponential
+        plot_Y_D_Y_p   = np.exp(interp_Y_D_Y_p(np.log(x)))
+        plot_Y_He4    = np.exp(interp_Y_He4(np.log(x)))
         plot_Y_Li7_Y_p = np.exp(interp_Y_Li7_Y_p(np.log(x)))
-        plot_Y_He3 = np.exp(interp_Y_He3(np.log(x)))
+        plot_Y_He3    = np.exp(interp_Y_He3(np.log(x)))
 
-        fig, ax = plt.subplots(nrows = 3, figsize = (6, 6), sharex = True, gridspec_kw={'height_ratios': [1, 3, 1]})
+        chi_squared = (plot_Y_D_Y_p - data_Y_D_Y_p[0])**2 / data_Y_D_Y_p[3]**2 \
+                    + (plot_Y_He4 - data_Y_He4[0])**2 / data_Y_He4[3]**2 \
+                    + (plot_Y_Li7_Y_p - data_Y_Li7_Y_p[0])**2 / data_Y_Li7_Y_p[3]**2
 
-        ax[0].axhspan(data_Y_He4[1], data_Y_He4[2], alpha = .3)
+        probability = np.exp(-chi_squared) / np.max(np.exp(-chi_squared))
+        idx = np.argmax(probability)
 
-        ax[0].plot(x, plot_Y_He4, label = r"He$^4$")
-        ax[0].set_ylim([0.20, 0.30]); ax[0].set_xlim([1e-2, 1e0])
+        fig, ax = plt.subplots(3, sharex=True, figsize = (7, 8), gridspec_kw={'height_ratios': [1, 3, 1]})
+
+        # Data
+        ax[0].axhspan(data_Y_He4[1], data_Y_He4[2], alpha = .3, color = "tab:green")
+        ax[1].axhspan(data_Y_D_Y_p[1], data_Y_D_Y_p[2], alpha = .3, color = "tab:blue")
+        ax[1].axhspan(data_Y_Li7_Y_p[1], data_Y_Li7_Y_p[2], alpha = .3, color = "tab:red")
+
+        # Calculated
+        ax[0].plot(x, plot_Y_He4, color = "tab:green", label = r"He$^4$")
+        ax[0].set_ylabel(r"4Y$_{He^4}$")
+        ax[0].vlines(x[idx], 0.20, 0.30, color = "black",linestyles = "dotted")
+        ax[0].legend()
+
+
+        ax[1].plot(x, plot_Y_D_Y_p, color = "tab:blue", label = r"D")
+        ax[1].plot(x, plot_Y_He3, color = "tab:orange",  label = r"He$^3$")
+        ax[1].plot(x, plot_Y_Li7_Y_p, color = "tab:red", label = r"Li$^7$")
+        ax[1].set_ylabel(r"Y$_i$/Y$_p$"'')
+        ax[1].vlines(x[idx], 1e-11, 1e-3, color = "black",linestyles = "dotted")
+        ax[1].legend()
+
+        # normalized probability
+        ax[2].plot(x, probability, color = "black")
+        ax[2].set_xlabel(r"$\Omega_{b0}$")
+        ax[2].set_ylabel("Normalized probability")
+
+        #
+        ax[0].set_ylim([.20, .30]); ax[0].set_xlim([1e-2, 1e0])
+        ax[1].set_ylim([1e-11, 1e-3]); ax[1].set_xlim([1e-2, 1e0])
+        ax[2].set_ylim([0, 1]); ax[2].set_xlim([1e-2, 1e0])
+
+        # setting log scale for better visualisation
         ax[0].set_xscale("log"); ax[0].set_yscale("log")
-
-
-
+        ax[1].set_xscale("log"); ax[1].set_yscale("log")
+        ax[2].set_xscale("log")
+        fig.tight_layout()
+        print(np.exp(-chi_squared[idx]))
+        #plt.savefig("j.png")
+        self.Omega_b0 = 0.05 # resetting
         return None
 
 # Task k
+    def taskk(self, N):
+        """
+        The purpose of this task is to compute the relic abundances in the range N_eff = [1, 5] and
+        compare with measurements using chi-squared-method. This method will also give us the most probable calue for N_eff.
+        """
+        self.Omega_b0 = 0.05 # resetting
+        # observed values (value, min, max, error)
+        data_Y_D_Y_p = (2.57e-5, (2.57 - .03)*1e-5, (2.57 + .03)*1e-5, .03e-5)
+        data_Y_He4 = (.254, .254 - .003, .254 + .003, .003)
+        data_Y_Li7_Y_p = (1.6e-10, (1.6 - 0.3)*1e-10, (1.6 + 0.3)*1e-10, .3e-5)
+
+        # possible N_eff
+        N_effs = np.linspace(1, 5, N)
+
+        T = np.zeros(N); Y_n = np.zeros(N); Y_p = np.zeros(N); Y_D = np.zeros(N); Y_T = np.zeros(N);
+        Y_He3 = np.zeros(N); Y_He4 = np.zeros(N); Y_Li7 = np.zeros(N); Y_Be7 = np.zeros(N)
+
+        for i, Ns in enumerate(N_effs):
+            self.N_eff = Ns
+            # time span
+            T_i = 100e9
+            T_f = .01e9
+
+            # initial conditions
+            Y_n_Ti = (1 + np.exp((self.m_n - self.m_p)*self.c**2/self.k*T_i))**(-1)
+            Y_p_Ti = 1 - Y_n_Ti
+            YD = 0; YT = 0; YHe3 = 0; YHe4 = 0; YLi7 = 0; YBe7 = 0
+
+            solve = solve_ivp(self.differentials_i, [np.log(T_i), np.log(T_f)], [Y_n_Ti, Y_p_Ti, YD, YT, YHe3, YHe4, YLi7, YBe7], method='Radau', rtol=1e-12, atol=1e-12)
+
+            T[i]     = np.exp(solve.t[0])
+
+            # lower bound on Y_i of 1e-20 to avoid possible numerical errors
+            Y_n[i]   = np.max([solve.y[0][-1], 1e-20])
+            Y_p[i]   = np.max([solve.y[1][-1], 1e-20])
+            Y_D[i]   = np.max([solve.y[2][-1], 1e-20])
+            Y_T[i]   = np.max([solve.y[3][-1], 1e-20])
+            Y_He3[i] = np.max([solve.y[4][-1], 1e-20])
+            Y_He4[i] = np.max([solve.y[5][-1], 1e-20])
+            Y_Li7[i] = np.max([solve.y[6][-1], 1e-20])
+            Y_Be7[i] = np.max([solve.y[7][-1], 1e-20])
+
+        # interpolate computed values for smoother plot
+        # we interpolate the logarithm of the computed values to make the program run faster
+        interp_Y_D_Y_p = interpolate.interp1d(N_effs, Y_D / Y_p, kind='cubic')
+        interp_Y_He4= interpolate.interp1d(N_effs, 4 * Y_He4, kind='cubic')
+        interp_Y_Li7_Y_p = interpolate.interp1d(N_effs, (Y_Li7 + Y_Be7) / Y_p, kind='cubic')
+        interp_Y_He3 = interpolate.interp1d(N_effs, Y_He3 + Y_T, kind='cubic')
+
+        # prepare for plotting
+        x = np.linspace(1, 5, 1000)
+
+        # retrieve actual values from interpolation by taking the exponential
+        plot_Y_D_Y_p   = interp_Y_D_Y_p(x)
+        plot_Y_He4    = interp_Y_He4(x)
+        plot_Y_Li7_Y_p = interp_Y_Li7_Y_p(x)
+        plot_Y_He3    = interp_Y_He3(x)
+
+        chi_squared = (plot_Y_D_Y_p - data_Y_D_Y_p[0])**2 / data_Y_D_Y_p[3]**2 \
+                    + (plot_Y_He4 - data_Y_He4[0])**2 / data_Y_He4[3]**2 \
+                    + (plot_Y_Li7_Y_p - data_Y_Li7_Y_p[0])**2 / data_Y_Li7_Y_p[3]**2
+
+        probability = np.exp(-chi_squared) / np.max(np.exp(-chi_squared))
+        idx = np.argmax(probability)
+
+        fig, ax = plt.subplots(4, sharex=True, figsize = (7, 8),)
+
+        # Data
+        ax[0].axhspan(data_Y_He4[1], data_Y_He4[2], alpha = .3, color = "tab:green")
+        ax[1].axhspan(data_Y_D_Y_p[1], data_Y_D_Y_p[2], alpha = .3, color = "tab:blue")
+        ax[2].axhspan(data_Y_Li7_Y_p[1], data_Y_Li7_Y_p[2], alpha = .3, color = "tab:red")
+
+        # Calculated
+        ax[0].plot(x, plot_Y_He4, color = "tab:green", label = r"He$^4$")
+        ax[0].set_ylabel(r"4Y$_{He^4}$")
+        ax[0].vlines(x[idx], 0.20, 0.30, color = "black",linestyles = "dotted")
+        ax[0].legend()
+
+        ax[1].plot(x, plot_Y_D_Y_p, color = "tab:blue", label = r"D")
+        ax[1].plot(x, plot_Y_He3, color = "tab:orange",  label = r"He$^3$")
+        ax[1].set_ylabel(r"Y$_i$/Y$_p$")
+        ax[1].vlines(x[idx], 0.5e-5, 4e-5, color = "black",linestyles = "dotted")
+        ax[1].legend()
+
+        ax[2].plot(x, plot_Y_Li7_Y_p, color = "tab:red", label = r"Li$^7$")
+        ax[2].vlines(x[idx], 1e-10, 3e-10, color = "black",linestyles = "dotted")
+        ax[2].set_ylabel(r"Y$_i$/Y$_p$")
+        ax[2].legend()
+
+        # normalized probability
+        ax[3].plot(x, probability, color = "black")
+        ax[3].set_xlabel(r"$N_{eff}$")
+        ax[3].set_ylabel("Normalized probability")
+
+        #
+        ax[0].set_ylim([.20, .30]); ax[0].set_xlim([1e-2, 1e0])
+        ax[1].set_ylim([0.5e-5, 4e-5]); ax[1].set_xlim([1.0, 5.0])
+        ax[2].set_ylim([1e-10, 3e-10]); ax[2].set_xlim([1.0, 5.0])
+        ax[3].set_ylim([0.0, 1.0]); ax[3].set_xlim([1.0, 5.0])
+
+        fig.tight_layout()
+        plt.savefig("k.png")
+
+        return None
 
 ########## reaction rates from table 2 in "ON THE SYNTHESIS OF ELEMENTS AT VERY HIGH TEMPERATURES" ##########
     def lambda_w(self, T, type):
@@ -598,5 +742,6 @@ class BigBangNucleosynthesis():
 #BigBangNucleosynthesis().taskf()
 #BigBangNucleosynthesis().taskh()
 #BigBangNucleosynthesis().taski()
-BigBangNucleosynthesis().taskk(5)
+#BigBangNucleosynthesis().taskj(10)
+BigBangNucleosynthesis().taskk(10)
 plt.show()

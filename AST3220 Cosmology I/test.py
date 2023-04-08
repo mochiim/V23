@@ -321,10 +321,8 @@ class ElementAbundance:
 
         xi = np.zeros(N)
 
-        Y_D = np.zeros(N)
-        Y_n, T, Y_p, Y_He3, Y_He4, Y_T, Y_Li7, Y_Be7 \
-            = Y_D.copy(), Y_D.copy(), Y_D.copy(), Y_D.copy(), Y_D.copy(), \
-              Y_D.copy(), Y_D.copy(), Y_D.copy()
+        T = np.zeros(N); Y_n = np.zeros(N); Y_p = np.zeros(N); Y_D = np.zeros(N); Y_T = np.zeros(N);
+        Y_He3 = np.zeros(N); Y_He4 = np.zeros(N); Y_Li7 = np.zeros(N); Y_Be7 = np.zeros(N)
 
         # Calculating relic abundances:
         for i, val in enumerate(omegas):
@@ -333,7 +331,7 @@ class ElementAbundance:
             Yn_Ti = (1 + np.exp( (self.m_n - self.m_p) \
                                 * self.c**2 / self.k_B * T_i ) )**(-1)
             Yp_Ti = 1 - Yn_Ti
-            YD, YT, YHe3, YHe4, YLi7, YBe7 = 0, 0, 0, 0, 0, 0
+            YD = 0; YT = 0; YHe3 = 0; YHe4 = 0; YLi7 = 0; YBe7 = 0
 
             solve = int.solve_ivp(self.dY_i, t_span=[np.log(T_i), np.log(0.01e9)],\
                     y0=[Yn_Ti, Yp_Ti, YD, YT, YHe3, YHe4, YLi7, YBe7], \
@@ -382,29 +380,29 @@ class ElementAbundance:
 
         # Calculated
         ax[0].plot(xnew, plot_YHe4, color='tab:green', label=r'He$^4$')
-        #ax[0].set_ylabel(r'4Y$_{He^4}$')
-        #ax[0].legend(loc='upper left')
+        ax[0].set_ylabel(r'4Y$_{He^4}$')
+        ax[0].legend(loc='upper left')
         ax[0].set_ylim([0.20, 0.30]); ax[0].set_xlim([1e-2, 1e0])
-        #ax[0].vlines(xnew[xi_min], 0.20, 0.30, color='k',linestyles='dotted')
+        ax[0].vlines(xnew[xi_min], 0.20, 0.30, color='k',linestyles='dotted')
 
-        #ax[1].plot(xnew, plot_YD_Yp, color='tab:blue', label=r'D')
-        #ax[1].plot(xnew, plot_YHe3, color='tab:orange', label=r'He$^3$')
-        #ax[1].plot(xnew, plot_YLi7_Yp, color='tab:red', label=r'Li$^7$')
-        #ax[1].set_ylim([1e-10, 1e-3]); ax[1].set_xlim([1e-2, 1e0])
-        #ax[1].set_ylabel(r'Y$_i$/Y$_p$')
-        #ax[1].legend(loc='center left')
-        #x[1].vlines(xnew[xi_min], 1e-11, 1e-3, color='k', linestyles='dotted')
+        ax[1].plot(xnew, plot_YD_Yp, color='tab:blue', label=r'D')
+        ax[1].plot(xnew, plot_YHe3, color='tab:orange', label=r'He$^3$')
+        ax[1].plot(xnew, plot_YLi7_Yp, color='tab:red', label=r'Li$^7$')
+        ax[1].set_ylim([1e-10, 1e-3]); ax[1].set_xlim([1e-2, 1e0])
+        ax[1].set_ylabel(r'Y$_i$/Y$_p$')
+        ax[1].legend(loc='center left')
+        ax[1].vlines(xnew[xi_min], 1e-11, 1e-3, color='k', linestyles='dotted')
 
         # Normalized probability:
-        #ax[2].plot(xnew, prob, color='k')
-        #ax[2].set_ylabel(r'Normalized probability')
-        #ax[2].set_ylim([0.0, 1.0]); ax[2].set_xlim([1e-2, 1e0])
+        ax[2].plot(xnew, prob, color='k')
+        ax[2].set_ylabel(r'Normalized probability')
+        ax[2].set_ylim([0.0, 1.0]); ax[2].set_xlim([1e-2, 1e0])
 
         # Setting logscale
         ax[0].set_xscale("log"); ax[0].set_yscale("log")
-        #ax[1].set_xscale("log"); ax[1].set_yscale("log")
-        #ax[2].set_xscale("log")
-        #ax[2].set_xlabel(r'$\Omega_{b0}$')
+        ax[1].set_xscale("log"); ax[1].set_yscale("log")
+        ax[2].set_xscale("log")
+        ax[2].set_xlabel(r'$\Omega_{b0}$')
         fig.tight_layout()
         # plt.savefig('j.png')
         plt.show()
