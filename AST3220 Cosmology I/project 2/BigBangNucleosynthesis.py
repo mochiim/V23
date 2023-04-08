@@ -423,7 +423,6 @@ class BigBangNucleosynthesis():
             Y_Be7[i] = np.max([solve.y[7][-1], 1e-20])
 
         # interpolate computed values for smoother plot
-        # we interpolate the logarithm of the computed values to make the program run faster
         interp_Y_D_Y_p = interpolate.interp1d(N_effs, Y_D / Y_p, kind='cubic')
         interp_Y_He4= interpolate.interp1d(N_effs, 4 * Y_He4, kind='cubic')
         interp_Y_Li7_Y_p = interpolate.interp1d(N_effs, (Y_Li7 + Y_Be7) / Y_p, kind='cubic')
@@ -432,7 +431,6 @@ class BigBangNucleosynthesis():
         # prepare for plotting
         x = np.linspace(1, 5, 1000)
 
-        # retrieve actual values from interpolation by taking the exponential
         plot_Y_D_Y_p   = interp_Y_D_Y_p(x)
         plot_Y_He4    = interp_Y_He4(x)
         plot_Y_Li7_Y_p = interp_Y_Li7_Y_p(x)
@@ -445,7 +443,7 @@ class BigBangNucleosynthesis():
         probability = np.exp(-chi_squared) / np.max(np.exp(-chi_squared))
         idx = np.argmax(probability)
 
-        fig, ax = plt.subplots(4, sharex=True, figsize = (7, 8),)
+        fig, ax = plt.subplots(4, sharex=True, figsize = (7, 8))
 
         # Data
         ax[0].axhspan(data_Y_He4[1], data_Y_He4[2], alpha = .3, color = "tab:green")
@@ -481,7 +479,7 @@ class BigBangNucleosynthesis():
         ax[3].set_ylim([0.0, 1.0]); ax[3].set_xlim([1.0, 5.0])
 
         fig.tight_layout()
-        plt.savefig("k.png")
+        #plt.savefig("k.png")
 
         return None
 
@@ -743,5 +741,5 @@ class BigBangNucleosynthesis():
 #BigBangNucleosynthesis().taskh()
 #BigBangNucleosynthesis().taski()
 #BigBangNucleosynthesis().taskj(10)
-BigBangNucleosynthesis().taskk(10)
-plt.show()
+#BigBangNucleosynthesis().taskk(10)
+#plt.show()
