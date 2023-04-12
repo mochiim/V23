@@ -126,8 +126,8 @@ class stellar_modelling:
     def dP(self, m, r):
         return - (self.G * m) / (4 * np.pi * r**4)
 
-    def dL(self):
-        return None
+    def dL(self, T, rho):
+        return energy(T, rho).energy_production()
 
     ########## Sanity checks ##########
 
@@ -158,5 +158,4 @@ class stellar_modelling:
 
 S = stellar_modelling()
 S.readfile()
-print(S.mu)
 #S._sanity_check_opacity()
