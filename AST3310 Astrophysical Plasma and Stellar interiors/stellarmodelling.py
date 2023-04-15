@@ -55,6 +55,10 @@ class stellar_modelling:
         # mean molecular weight per particle
         self.mu = 1 / (2*self.X + self.Y_He3 + 3/4*self.Y + 4/7*self.Z_Li7 + 5/7*self.Z_Be7 + 8/14*self.Z_N14)
 
+        #
+        self.delta = 1
+        self.alpha = 1
+
     def readfile(self):
         """
         This function reads file "opacity.txt" and extracts log(R), log(T) and log(kappa) from the file.
@@ -101,17 +105,18 @@ class stellar_modelling:
 
         return log_kappa
 
-    def _pressure(self, rho, T):
+    def _P(self, rho, T):
         """
         Computing pressure in a star as a function of density (rho) and temperature (T) given by
         P = P_gas + P_rad
         """
-        P_rad = a*T**4/3
-        P_gas = rho*self.k_B*T / (self.mu*self.m_u)
+        a = 4*self.sigma/self.c                        # radiation density constant
+        P_rad = a*T**4/3                                # radiation pressure
+        P_gas = rho*self.k_B*T / (self.mu*self.m_u)     # gas pressure
         P = P_rad + P_gas
         return P
 
-    def _density(self, P, T):
+    def _rho(self, P, T):
         """
         Computing density in a star from equation of state for an ideal gas
         """
@@ -120,14 +125,58 @@ class stellar_modelling:
         return rho
 
     ########## Differential equations ##########
-    def dr(self, rho, r):
+    def _dr(self, rho, r):
         return 1 / (4 * np.pi * r**2 * rho)
 
-    def dP(self, m, r):
+    def _dP(self, m, r):
         return - (self.G * m) / (4 * np.pi * r**4)
 
-    def dL(self, T, rho):
+    def _dL(self, T, rho):
         return energy(T, rho).energy_production()
+
+    def _dT(self, T, P, m, r):
+        """
+        Temperature gradient when dealing with radiative transport only
+        """
+        kappa = self._polation_opacity(T, rho)
+        return self._nabla_star * T / P * self.dP(m, r)
+
+    # gradients
+    def _nabla_stable(self, L, T, rho, r):
+        kappa = self._polation_opacity(T, rho)
+        return (L * 3 * kappa * H_p) / (4 * np.pi * r**2 * 16 * self.sigma * T**4)
+
+    def _nabla_ad(self, P):
+        return 2/5 # value is valid for an ideal gas
+
+    def _nabla_star():
+        return None
+
+    def _total_flux():
+        return None
+
+    def _F_rad(self, T, rho):
+        return None
+
+    def _F_con():
+        return None
+
+    def _H_p(self, rho, T, r):
+        """ Pressure scale height """
+        #g = self.G * M * r**2
+        #H_p = (self.k_B * T) / (self.mu * self.m_u * g)
+        H_p = - self._P(rho, T)*self._dr(rho, r)
+        return H_p
+
+    def _U(self, rho, r):
+        g = self.G * M * r**2
+        c_p = 0 ########################
+        U = (64 * self.sigma * T**3) / (3 * rho**2 * self._c_p) * np.sqrt(self._H_p / (g * self.delta))
+        return U
+
+    def _l_m(self):
+        """ Mixing length """
+        return H_p*self.alpha
 
     ########## Sanity checks ##########
 
@@ -154,8 +203,21 @@ class stellar_modelling:
         print(table)
 
     def _sanity_check_gradient(self):
-        return None
+        mu = self.mu
+        T = .9e6 # [K]
+        rho = 55.9 # [kg m^-3]
+        R = .84*self.R_sun
+        M = .99*self.M_sun
+        kappa = 3.98 # [m^2 kg^-1]
+        alpha = 1
+        nabla_stable = 3.26
+        nabla_ad = 2/5
+
+        H_p = self._H_p(rho, T, R)
+        return H_p
 
 S = stellar_modelling()
 S.readfile()
 #S._sanity_check_opacity()
+
+print(S._sanity_check_gradient())

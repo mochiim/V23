@@ -750,9 +750,9 @@ class BigBangNucleosynthesis():
         return nBe7, He4He4
 
 
-temperatures = np.array([1e10, 1e9, 1e8])
-for T in temperatures:
-    print(f"The age of the Universe at {T} K is {BigBangNucleosynthesis().taskd(T): .3f} s")
+#temperatures = np.array([1e10, 1e9, 1e8])
+#for T in temperatures:
+#    print(f"The age of the Universe at {T} K is {BigBangNucleosynthesis().taskd(T): .3f} s")
 
 #BigBangNucleosynthesis().taskf()
 #BigBangNucleosynthesis().taskh()
