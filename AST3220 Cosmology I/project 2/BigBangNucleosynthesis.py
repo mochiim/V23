@@ -26,6 +26,19 @@ class BigBangNucleosynthesis():
         self.Omega_b0 = 0.05
         self.rho_c0 = 1.879e-29*self.h**2        # critial density [gcm^-3]
 
+# Task d
+    def taskd(self, T):
+        """
+        Computing the age of the Universe at a given temperature
+        T = temperature [K]
+        """
+        H0 = 100*self.h               # Hubble parameter [km s^-1 Mpc^-1]
+        Mpc = 3.086e22           # [m]
+        H0_scaled = H0*1e3/Mpc   # [m s^-2 m^-1]
+        Omega_r0 = ((8 * np.pi**3 * self.G * (self.k*self.T0)**4 ) / (45 * H0_scaled**2 * self.hbar**3 * self.c**5)) * (1 + self.N_eff * (7/8) * (4/11)**(4/3))
+        t = self.T0**2 / (T**2 * 2 * H0_scaled * np.sqrt(Omega_r0))
+        return t
+
 # Task f
     def differentials_f(self, logT, Y):
         """
@@ -736,6 +749,10 @@ class BigBangNucleosynthesis():
 
         return nBe7, He4He4
 
+
+temperatures = np.array([1e10, 1e9, 1e8])
+for T in temperatures:
+    print(f"The age of the Universe at {T} K is {BigBangNucleosynthesis().taskd(T): .3f} s")
 
 #BigBangNucleosynthesis().taskf()
 #BigBangNucleosynthesis().taskh()
