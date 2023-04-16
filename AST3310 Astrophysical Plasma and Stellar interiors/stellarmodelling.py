@@ -5,6 +5,7 @@ import scipy.constants as sc
 from tabulate import tabulate
 import pandas as pd
 from energy_production import energy # project 1
+from cross_section import cross_section
 
 plt.style.use('ggplot')
 plt.rcParams['font.size'] = 20
@@ -224,6 +225,8 @@ class stellar_modelling:
         nabla_star = self._nabla_star(rho, T, r, m, L, kappa)
         nabla_stable = self._nabla_stable(L, T, m, rho, r, kappa)
         nabla_ad = self._nabla_ad(rho, T)
+        F_con = self._F_con(rho, T, r, m, L, kappa)
+        F_rad = self._F_rad(rho, T, r, m, L, kappa)
 
         # obtaining epsilon from project 1
         PP1, PP2, PP3, CNO = energy(T, rho).energy_production()
@@ -255,7 +258,7 @@ class stellar_modelling:
         T_new = T + dT * dm
         M_new = m + dm
 
-        return r_new, P_new, L_new, T_new, M_new, rho, nabla_stable, nabla_star
+        return r_new, P_new, L_new, T_new, M_new, rho, nabla_stable, nabla_star, F_con, F_rad
 
     def _computation(self):
         radius = [self.R_0]
@@ -267,13 +270,15 @@ class stellar_modelling:
         density = [self.rho_0]
         nabla_stable = []
         nabla_star = []
+        F_con = []
+        F_rad = []
 
         i = 0
         while radius[i] > 0 and mass[i] > 0 and luminosity[i] > 0:
             """
             While loop runs until we hit the stellar core, i.e. r = 0
             """
-            r_new, P_new, L_new, T_new, M_new, rho_new, nabla_stable_new, nabla_star_new = self._integration(mass[i], radius[i], pressure[i], luminosity[i], temperature[i])
+            r_new, P_new, L_new, T_new, M_new, rho_new, nabla_stable_new, nabla_star_new, F_con_new, F_rad_new = self._integration(mass[i], radius[i], pressure[i], luminosity[i], temperature[i])
             radius.append(r_new)
             pressure.append(P_new)
             luminosity.append(L_new)
@@ -282,17 +287,23 @@ class stellar_modelling:
             density.append(rho_new)
             nabla_stable.append(nabla_stable_new)
             nabla_star.append(nabla_star_new)
+            F_con.append(F_con_new)
+            F_rad.append(F_con_new)
             i += 1
 
-        return np.array(mass), np.array(radius), np.array(luminosity)
+        return np.array(mass), np.array(radius), np.array(luminosity), np.array(F_con)
 
     def _convergence(self):
-        M, R, L = self._computation()
+        M, R, L, F_con = self._computation()
         x = np.linspace(0, len(M), len(M))
         plt.plot(x, M/np.max(M), label = r"M/M$_{max}$")
         plt.plot(x, L/np.max(L), label = r"L/L$_{max}$")
         plt.plot(x, R/np.max(R), label = r"R/R$_{max}$")
         plt.legend()
+
+    def _cross_section(self):
+        M, R, L, F_con = self._computation()
+        cross_section(R, L, F_con, show_every=20, sanity=False, savefig=False)
 
     ########## Sanity checks ##########
 
@@ -380,5 +391,5 @@ S.readfile()
 #S._sanity_check_opacity()
 #S._sanity_check_gradient()
 #S._convergence()
-print(S.mu)
-#plt.show()
+S._cross_section()
+plt.show()
