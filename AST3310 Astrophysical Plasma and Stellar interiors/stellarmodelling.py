@@ -129,24 +129,6 @@ class stellar_modelling:
         rho = (P - P_rad)*self.mu*self.m_u / (self.k_B*T)
         return rho
 
-    ########## Differential equations ##########
-    def _dr(self, rho, r):
-        return 1 / (4 * np.pi * r**2 * rho)
-
-    def _dP(self, m, r):
-        return - (self.G * m) / (4 * np.pi * r**4)
-
-    def _dL(self, T, rho):
-        return energy(T, rho).energy_production()
-
-    def _dT(self, T, P, m, r):
-        """
-        Temperature gradient when dealing with radiative transport only
-        """
-        kappa = self._polation_opacity(T, rho)
-        nabla_star = self._nabla_star(rho, T, r, m, L, kappa)
-        return nabla_star * T / P * self.dP(m, r)
-
     ########## Gradients ##########
     def _nabla_stable(self, L, T, m, rho, r, kappa):
         nabla_stable = (L * 3 * kappa * rho * self._H_P(rho, T, r, m)) / (4 * np.pi * r**2 * 16 * self.sigma * T**4)
@@ -228,9 +210,10 @@ class stellar_modelling:
         return U
 
     ########## Integration ##########
-
-    ########## Integration ##########
     def _integration(self, m, r, P, L, T, p = 0.01):
+        """
+        Forward euler
+        """
         rho = self._rho(P, T)
         kappa = self._polation_opacity(T, rho)
         c_P = self.c_P
@@ -240,15 +223,16 @@ class stellar_modelling:
         U = self._U(rho, r, m, T, kappa)
         nabla_star = self._nabla_star(rho, T, r, m, L, kappa)
         nabla_stable = self._nabla_stable(L, T, m, rho, r, kappa)
+        nabla_ad = self._nabla_ad(rho, T)
 
         # obtaining epsilon from project 1
         PP1, PP2, PP3, CNO = energy(T, rho).energy_production()
-        eps = np.sum(PP1) + np.sum(PP2) + np.sum(PP3) + CNO
+        eps = PP1 + PP2 + PP3 + CNO
 
         # partial differential equations
         dr = 1 / (4 * np.pi * r**2 * rho)
         dP = - (self.G * m) / (4 * np.pi * r**4)
-        dL = eps[0]
+        dL = eps
 
         # convetive instability check
         if nabla_stable > nabla_ad:
@@ -268,10 +252,47 @@ class stellar_modelling:
         r_new = r + dr * dm
         P_new = P + dP * dm
         L_new = L + dL * dm
-        T_new = T + dt * km
+        T_new = T + dT * dm
         M_new = m + dm
 
-        return r_new, P_new, L_new, T_new, M_new, rho_new, nabla_stable, nabla_star
+        return r_new, P_new, L_new, T_new, M_new, rho, nabla_stable, nabla_star
+
+    def _computation(self):
+        radius = [self.R_0]
+        P_0 = self._P(self.rho_0, self.T_0)
+        pressure = [P_0]
+        luminosity = [self.L_0]
+        temperature = [self.T_0]
+        mass = [self.M_0]
+        density = [self.rho_0]
+        nabla_stable = []
+        nabla_star = []
+
+        i = 0
+        while radius[i] > 0 and mass[i] > 0 and luminosity[i] > 0:
+            """
+            While loop runs until we hit the stellar core, i.e. r = 0
+            """
+            r_new, P_new, L_new, T_new, M_new, rho_new, nabla_stable_new, nabla_star_new = self._integration(mass[i], radius[i], pressure[i], luminosity[i], temperature[i])
+            radius.append(r_new)
+            pressure.append(P_new)
+            luminosity.append(L_new)
+            temperature.append(T_new)
+            mass.append(M_new)
+            density.append(rho_new)
+            nabla_stable.append(nabla_stable_new)
+            nabla_star.append(nabla_star_new)
+            i += 1
+
+        return np.array(mass), np.array(radius), np.array(luminosity)
+
+    def _convergence(self):
+        M, R, L = self._computation()
+        x = np.linspace(0, len(M), len(M))
+        plt.plot(x, M/np.max(M), label = r"M/M$_{max}$")
+        plt.plot(x, L/np.max(L), label = r"L/L$_{max}$")
+        plt.plot(x, R/np.max(R), label = r"R/R$_{max}$")
+        plt.legend()
 
     ########## Sanity checks ##########
 
@@ -356,5 +377,7 @@ class stellar_modelling:
 
 S = stellar_modelling()
 S.readfile()
-S._sanity_check_opacity()
+#S._sanity_check_opacity()
 #S._sanity_check_gradient()
+S._convergence()
+plt.show()
