@@ -20,7 +20,12 @@ class stellar_modelling:
         _polation_opacity(T, rho) -
         _P(rho, T) - computes pressure in a star for a given density and temperature
         _rho(P, T) - computes density in a star for a given pressure and temperature
-
+        _dr(rho, r) -
+        _dP(m, r) -
+        _dL(T, rho) -
+        _dT(T, P, m, r) -
+        _sanity_check_opacity()
+        _sanity_check_gradient()
     """
     def __init__(self, value = int):
         # useful constants
@@ -43,7 +48,6 @@ class stellar_modelling:
         self.M_0 = self.M_sun               # solar radius [m]
         self.rho_0 = 1.42e-7*self.rho_sun   # density [kg m^-3]
         self.T_0 = 5770                     # [K]
-        self.P_0 = self._P(self.rho_0, self.T_0)
 
         # mass fraction
         self.X = .7                         # hydrogen
@@ -59,7 +63,8 @@ class stellar_modelling:
         #
         self.delta = 1
         self.alpha = 1
-        self.c_p = 5 * self.k_B / (2 * self.mu * self.m_u)
+        self.c_P = 5 * self.k_B / (2 * self.mu * self.m_u)
+        self.P_0 = self._P(self.rho_0, self.T_0)
 
     def readfile(self):
         """
@@ -111,9 +116,9 @@ class stellar_modelling:
         Computing pressure in a star as a function of density (rho) and temperature (T) given by
         P = P_gas + P_rad
         """
-        a = 4*self.sigma/self.c                               # radiation density constant
+        a = 4*self.sigma/self.c                        # radiation density constant
         P_rad = a * T ** (4/3)                                # radiation pressure
-        P_gas = rho*self.k_B*T / (self.mu * self.m_u)         # gas pressure
+        P_gas = rho*self.k_B*T / (self.mu*self.m_u)     # gas pressure
         P = P_rad + P_gas
         return P
 
@@ -121,10 +126,30 @@ class stellar_modelling:
         """
         Computing density in a star from equation of state for an ideal gas
         """
+        a = 4*self.sigma/self.c                        # radiation density constant
         P_rad = a*T**4/3
         rho = (P - P_rad)*self.mu*self.m_u / (self.k_B*T)
         return rho
 
+    ########## Differential equations ##########
+    def _dr(self, rho, r):
+        return 1 / (4 * np.pi * r**2 * rho)
+
+    def _dP(self, m, r):
+        return - (self.G * m) / (4 * np.pi * r**4)
+
+    def _dL(self, T, rho):
+        return energy(T, rho).energy_production()
+
+    def _dT(self, T, P, m, r):
+        """
+        Temperature gradient when dealing with radiative transport only
+        """
+        kappa = self._polation_opacity(T, rho)
+        nabla_star = self._nabla_star(rho, T, r, m, L, kappa)
+        return nabla_star * T / P * self.dP(m, r)
+
+    ########## Gradients ##########
     def _nabla_stable(self, L, T, m, rho, r, kappa):
         nabla_stable = (L * 3 * kappa * rho * self._H_P(rho, T, r, m)) / (4 * np.pi * r**2 * 16 * self.sigma * T**4)
         return nabla_stable
@@ -152,6 +177,7 @@ class stellar_modelling:
         nabla_p = 2 * U * 2 / r_p * xi**2 + nabla_ad
         return nabla_p
 
+    ########## Flux ##########
     def _F_rad(self, rho, T, r, m, L, kappa):
         """ Radiative flux """
         nabla_star = self._nabla_star(rho, T, r, m, L, kappa)
@@ -199,12 +225,12 @@ class stellar_modelling:
 
     def _U(self, rho, r, m, T, kappa):
         g = self.G * m / r**2
-        U = (64 * self.sigma * T**3) / (3 * kappa * rho**2 * self.c_p) * np.sqrt( self._H_P(rho, T, r, m) / g )
+        U = (64 * self.sigma * T**3) / (3 * kappa * rho**2 * self.c_P) * np.sqrt( self._H_P(rho, T, r, m) / g )
         return U
 
     ########## Integration ##########
     def _integration(self, m, r, P, L, T, p = 0.01):
-        rho = _rho(P, T)
+        rho = self._rho(P, T)
         kappa = self._polation_opacity(T, rho)
         c_P = self.c_P
         g = self.G * m / r**2
@@ -280,7 +306,7 @@ class stellar_modelling:
         plt.plot(x, M/np.max(M))
         plt.plot(x, L/np.max(L))
         plt.plot(x, R/np.max(R))
-
+        plt.show()
 
     ########## Sanity checks ##########
 
@@ -364,9 +390,8 @@ class stellar_modelling:
 
 
 S = stellar_modelling()
-#S.readfile()
+S.readfile()
 #S._sanity_check_opacity()
 #S._sanity_check_gradient()
-#S._convergence()
-#plt.show()
-print(S.mu)
+S._convergence()
+plt.show()
