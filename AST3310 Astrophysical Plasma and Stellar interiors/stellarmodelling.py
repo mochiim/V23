@@ -253,15 +253,7 @@ class stellar_modelling:
             dT = nabla_star * T / P * dP                                       # convective and radiative transport
         else:
             dT = - 3 * kappa * L / (256 * np.pi**2 * self.sigma * r**4 * T**3) # radiative transport only
-        """
-        dm_r = r / dr
-        dm_P = P / dP
-        dm_L = L / dL
-        dm_T = T / dT
 
-        dm_list = np.array([r / dr, dm_P, dm_L, dm_T]) * p
-        dm = np.min(dm_list)
-        """
         # implementing variable time step
         f = np.array([dr, dP, dL, dT])
         V = np.array([r, P, L, T])
@@ -321,9 +313,12 @@ class stellar_modelling:
         L = L[:-1]
 
         x = np.linspace(0, len(M), len(M))
+        plt.figure(figsize = (8, 4))
         plt.plot(x, M/np.max(M), label = r"M/M$_{max}$")
         plt.plot(x, L/np.max(L), label = r"L/L$_{max}$")
         plt.plot(x, R/np.max(R), label = r"R/R$_{max}$")
+        plt.xlabel("steps")
+        plt.title("Convergence test")
         plt.legend()
 
         print(f"M: {M[-1]/self.M_0*100: 4.1f} %")
