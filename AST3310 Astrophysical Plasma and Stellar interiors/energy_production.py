@@ -154,9 +154,9 @@ class energy:
         """
         print(" Branch  |   Energy production [J kg^-1 s^-1]")
         print(f"PP1      |  {PP1: .3}")
-        print(f"PP1      |  {PP2: .3}")
-        print(f"PP1      |  {PP3: .3}")
-        print(f"PP1      |  {CNO: .3}")
+        print(f"PP2      |  {PP2: .3}")
+        print(f"PP3      |  {PP3: .3}")
+        print(f"CNO      |  {CNO: .3}")
         """
         return PP1, PP2, PP3, CNO
 
@@ -224,9 +224,9 @@ if __name__ == "__main__":
 
     Branch  |   Energy production [J kg^-1 s^-1]
     PP1      |   1.09e-13
-    PP1      |   4.84e-09
-    PP1      |   1.57e-09
-    PP1      |   5.67e-13
+    PP2      |   4.84e-09
+    PP3      |   1.57e-09
+    CNO      |   5.67e-13
     """
 
     B = energy(1e8, rho)
@@ -247,7 +247,7 @@ if __name__ == "__main__":
 
     Branch  |   Energy production [J kg^-1 s^-1]
     PP1      |   1.38e-05
-    PP1      |   0.561
-    PP1      |   1.34
-    PP1      |   0.213
+    PP2      |   0.561
+    PP3      |   1.34
+    CNO      |   0.213
     """

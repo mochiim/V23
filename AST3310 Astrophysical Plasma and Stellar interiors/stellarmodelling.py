@@ -8,7 +8,7 @@ from energy_production import energy # project 1
 from cross_section import cross_section
 
 plt.style.use('ggplot')
-plt.rcParams['font.size'] = 20
+plt.rcParams['font.size'] = 16
 plt.rcParams["lines.linewidth"] = 2
 
 class stellar_modelling:
@@ -17,16 +17,27 @@ class stellar_modelling:
     including both radiative and convective energy transport.
 
     The class contains the following functions:
-        _readfile() -
-        _polation_opacity(T, rho) -
+        _readfile() - reads files "opacity.txt" and "epsilon.txt"
+        _polation_opacity(T, rho) - inter/extrapolate values tables read in _readfile()
         _P(rho, T) - computes pressure in a star for a given density and temperature
         _rho(P, T) - computes density in a star for a given pressure and temperature
-        _dr(rho, r) -
-        _dP(m, r) -
-        _dL(T, rho) -
-        _dT(T, P, m, r) -
+        _nabla_stable() -
+        _nabla_ad()
+        _nabla_star() 0
+        _nabla_p() -
+        _F_rad() -
+        _F_con() -
+        _xi() -
+        _v()
+        _H_P()
+        _U
+        _integration()
+        _computation()
+        _convergence()
+        _cross_section()
         _sanity_check_opacity()
         _sanity_check_gradient()
+        _sanity_check_temperatures_gradient_plot()
     """
     def __init__(self, value = int):
         # useful constants
@@ -64,7 +75,6 @@ class stellar_modelling:
         #
         self.delta = 1
         self.alpha = 1
-        self.c_P = 5 * self.k_B / (2 * self.mu * self.m_u)
         self.a = 4 * self.sigma / self.c        # radiation density constant
 
     def readfile(self):
@@ -76,24 +86,23 @@ class stellar_modelling:
             - The rest of the table is log(kappa) given in [cm^2/g]
         """
         # loading file
-        data = np.loadtxt("/Users/rebeccanguyen/Documents/GitHub/V23/AST3310 Astrophysical Plasma and Stellar interiors/opacity.txt", dtype = np.str)
+        data_opacity = np.loadtxt("/Users/rebeccanguyen/Documents/GitHub/V23/AST3310 Astrophysical Plasma and Stellar interiors/opacity.txt", dtype = np.str)
 
         # extracting first row and removing first element
-        logR = data[0, 1:]
+        logR = data_opacity[0, 1:]
         self.logR = np.asarray(logR, dtype = float)
 
         # extracting first column and removing first element
-        logT = data[1:, 0];
+        logT = data_opacity[1:, 0];
         self.logT = np.asarray(logT, dtype = float)
 
         # extracing the remaining matrix
-        logkappa = data[1:, 1:]
+        logkappa = data_opacity[1:, 1:]
         self.logkappa = np.asarray(logkappa, dtype = float)
 
         # interpolation of opacity values (extrapolated for values outside the bounds)
         # calling RectBivariateSpline outputs an array
-        self.polation = RectBivariateSpline(self.logT, self.logR, self.logkappa)
-
+        self.polation_opacity = RectBivariateSpline(self.logT, self.logR, self.logkappa)
 
     def _polation_opacity(self, T, rho):
         """
@@ -105,10 +114,10 @@ class stellar_modelling:
             - Density, rho [kg m^-3].
         """
         _rho = np.log10(rho * 1000 / (T * 1e6 )**3) # obtaining logR from rho [g/cm^3]
-        log_kappa = self.polation(T, rho)[0][0]
+        log_kappa = self.polation_opacity(T, rho)[0][0]
 
-        if T > self.logT[-1] or T < self.logT[0] or _rho < self.logR[0] or _rho > self.logR[-1]:
-            print("Warning! Input out of bounds with table. Proceeding with extrapolation")
+        #if T > self.logT[-1] or T < self.logT[0] or _rho < self.logR[0] or _rho > self.logR[-1]:
+            #print("Warning! Input out of bounds with table. Proceeding with extrapolation")
 
         return 10**log_kappa * .1 # return SI units
 
@@ -163,7 +172,6 @@ class stellar_modelling:
         """ Radiative flux """
         nabla_star = self._nabla_star(rho, T, r, m, L, kappa)
         nabla_stable = self._nabla_stable(L, T, m, rho, r, kappa)
-
         F_rad = nabla_star / nabla_stable
         return F_rad
 
@@ -176,6 +184,7 @@ class stellar_modelling:
 
     def _xi(self, rho, T, r, m, L, kappa):
         H_P = self._H_P(rho, T, r, m)
+        c_P = self.k_B / (self.mu * self.m_u) * (3/2 * rho + 1)
         U = self._U(rho, r, m, T, kappa)
         nabla_stable = self._nabla_stable(L, T, m, rho, r, kappa)
         nabla_ad = self._nabla_ad(rho, T)
@@ -191,6 +200,7 @@ class stellar_modelling:
         """ Parcel velocity """
         g = self.G * m / r**2
         H_P = self._H_P(rho, T, r, m)
+        c_P = self.k_B / (self.mu * self.m_u) * (3/2 * rho + 1)
         U = self._U(rho, r, m, T, kappa)
         nabla_stable = self._nabla_stable(L, T, m, rho, r, kappa)
         nabla_ad = self._nabla_ad(rho, T)
@@ -206,18 +216,22 @@ class stellar_modelling:
         return H_p
 
     def _U(self, rho, r, m, T, kappa):
+        c_P = self._c_P(rho)
         g = self.G * m / r**2
-        U = (64 * self.sigma * T**3) / (3 * kappa * rho**2 * self.c_P) * np.sqrt( self._H_P(rho, T, r, m) / g )
+        U = (64 * self.sigma * T**3) / (3 * kappa * rho**2 * c_P) * np.sqrt( self._H_P(rho, T, r, m) / g )
         return U
 
+    def _c_P(self, rho):
+        return self.k_B / (self.mu * self.m_u) * (3/2 * rho + 1)
+
     ########## Integration ##########
-    def _integration(self, m, r, P, L, T, p = 0.01):
+    def _integration(self, m, r, P, L, T, p = 0.001):
         """
         Forward euler
         """
         rho = self._rho(P, T)
         kappa = self._polation_opacity(T, rho)
-        c_P = self.c_P
+        c_P = self._c_P(rho)
         g = self.G * m / r**2
         H_P = self._H_P(rho, T, r, m)
         l_m = H_P
@@ -225,12 +239,14 @@ class stellar_modelling:
         nabla_star = self._nabla_star(rho, T, r, m, L, kappa)
         nabla_stable = self._nabla_stable(L, T, m, rho, r, kappa)
         nabla_ad = self._nabla_ad(rho, T)
-        F_con = self._F_con(rho, T, r, m, L, kappa)
+        F_con = - self._F_con(rho, T, r, m, L, kappa)
         F_rad = self._F_rad(rho, T, r, m, L, kappa)
 
         # obtaining epsilon from project 1
-        PP1, PP2, PP3, CNO = energy(T, rho).energy_production()
-        eps = PP1 + PP2 + PP3 + CNO
+        star = energy(T, rho)                            # creating an instance in class energy with given temperature and density
+        star.reaction_rates()                            # reaction rates calculated based on given temperature
+        PP1, PP2, PP3, CNO = star.energy_production()
+        eps = PP1 + PP2 + PP3 + CNO                      # total energy
 
         # partial differential equations
         dr = 1 / (4 * np.pi * r**2 * rho)
@@ -239,17 +255,19 @@ class stellar_modelling:
 
         # convetive instability check
         if nabla_stable > nabla_ad:
-            dT = nabla_star * T / P * dP                                       # convective transport
+            dT = nabla_star * T / P * dP                                       # convective and radiative transport
         else:
-            dT = - 3 * kappa * L / (256 * np.pi**2 * self.sigma * r**4 * T**3) # radiative transport
+            dT = - 3 * kappa * L / (256 * np.pi**2 * self.sigma * r**4 * T**3) # radiative transport only
 
-        dm_r = r / dr
-        dm_P = P / dP
-        dm_L = L / dL
-        dm_T = T / dT
+        #dm_r = r / dr
+        #dm_P = P / dP
+        #dm_L = L / dL
+        #dm_T = T / dT
 
-        dm_list = np.array([dm_r, dm_P, dm_L, dm_T]) * p
-        dm = np.min(dm_list)
+        #dm_list = np.array([dm_r, dm_P, dm_L, dm_T]) * p
+
+        #dm = np.min(dm_list)
+        dm = np.min([abs(r * p / dr), abs(P * p / dP), abs(L * p / dL), abs(T * p / dT)])
 
         # new values
         r_new = r + dr * dm
@@ -274,11 +292,12 @@ class stellar_modelling:
         F_rad = []
 
         i = 0
-        while radius[i] > 0 and mass[i] > 0 and luminosity[i] > 0:
+        while mass[i] > 0 and radius[i] > 0 and luminosity[i] > 0:
             """
             While loop runs until we hit the stellar core, i.e. r = 0
             """
             r_new, P_new, L_new, T_new, M_new, rho_new, nabla_stable_new, nabla_star_new, F_con_new, F_rad_new = self._integration(mass[i], radius[i], pressure[i], luminosity[i], temperature[i])
+
             radius.append(r_new)
             pressure.append(P_new)
             luminosity.append(L_new)
@@ -319,7 +338,7 @@ class stellar_modelling:
         kappa_SI_expected = [2.84e-3, 3.11e-3, 2.68e-3, 2.46e-3, 2.12e-3, 4.70e-3, 6.25e-3, 9.45e-3, 4.05e-3, 4.43e-3, 4.94e-3, 6.89e-3, 7.69e-3]
 
         # computed values
-        logkappa_cgs_computed = np.array([self.polation(logT[i], logR[i])[0][0] for i in range(len(logT))])
+        logkappa_cgs_computed = np.array([self.polation_opacity(logT[i], logR[i])[0][0] for i in range(len(logT))])
         kappa_SI_computed = 10**logkappa_cgs_computed*.1
 
         table = pd.DataFrame({"logκ (cgs), exp"      :  logkappa_cgs_expected,
@@ -390,6 +409,6 @@ S = stellar_modelling()
 S.readfile()
 #S._sanity_check_opacity()
 #S._sanity_check_gradient()
-#S._convergence()
-S._cross_section()
+S._convergence()
+#S._cross_section()
 plt.show()
