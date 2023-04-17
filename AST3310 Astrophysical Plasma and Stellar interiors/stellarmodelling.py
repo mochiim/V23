@@ -114,8 +114,9 @@ class stellar_modelling:
             - Temperature, T [K]
             - Density, rho [kg m^-3].
         """
-        _rho = np.log10(rho * 1000 / (T * 1e6 )**3) # obtaining logR from rho [g/cm^3]
-        log_kappa = self.polation_opacity(T, rho)[0][0]
+        logR = np.log10( rho * .001 / (T * 1e6 )**3 ) # obtaining logR from rho [g/cm^3]
+        logT = np.log10(T)
+        log_kappa = self.polation_opacity(logT, logR)[0][0]
 
         #if T > self.logT[-1] or T < self.logT[0] or _rho < self.logR[0] or _rho > self.logR[-1]:
             #print("Warning! Input out of bounds with table. Proceeding with extrapolation")
@@ -248,7 +249,7 @@ class stellar_modelling:
         dP = - (self.G * m) / (4 * np.pi * r**4)
         dL = eps
 
-        # convetive instability check
+        # convetive instability check to determine dT
         if nabla_stable > nabla_ad:
             dT = nabla_star * T / P * dP                                       # convective and radiative transport
         else:
@@ -348,7 +349,7 @@ class stellar_modelling:
 
         table = pd.DataFrame({"logκ (cgs), exp"      :  logkappa_cgs_expected,
                               "logκ (cgs), com"      :  logkappa_cgs_computed,
-                              "κ (SI), exp"          : kappa_SI_expected,
+                              "κ (SI), exp"          :  kappa_SI_expected,
                               "κ (SI), com"          :  kappa_SI_computed})
 
         print(table)
