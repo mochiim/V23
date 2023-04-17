@@ -136,8 +136,8 @@ class stellar_modelling:
         """
         Computing density in a star from equation of state for an ideal gas
         """
-        P_rad = self.a*T**4/3
-        rho = (P - P_rad)*self.mu*self.m_u / (self.k_B*T)
+
+        rho = P * self.mu * self.m_u / (self.k_B * T)
         return rho
 
     ########## Gradients ##########
@@ -145,7 +145,7 @@ class stellar_modelling:
         nabla_stable = (L * 3 * kappa * rho * self._H_P(rho, T, r, m)) / (4 * np.pi * r**2 * 16 * self.sigma * T**4)
         return nabla_stable
 
-    def _nabla_ad(self, rho, T):
+    def _nabla_ad(self):
         return 2/5 # valid for ideal gas
 
     def _nabla_star(self, rho, T, r, m, L, kappa):
@@ -153,7 +153,7 @@ class stellar_modelling:
         H_P = self._H_P(rho, T, r, m)
         l_m = H_P * self.alpha # mixing length
         K = 2 / l_m ** 2
-        nabla_ad = self._nabla_ad(rho, T)
+        nabla_ad = self._nabla_ad()
         nabla_star = xi ** 2 + K * xi + nabla_ad
         return nabla_star
 
@@ -161,7 +161,7 @@ class stellar_modelling:
         xi = self._xi(rho, T, r, m, L, kappa)
         H_P = self._H_P(rho, T, r, m)
         l_m = H_P * self.alpha # mixing length
-        nabla_ad = self._nabla_ad(rho, T)
+        nabla_ad = self._nabla_ad()
         U = self._U(rho, r, m, T, kappa)
         r_p = l_m / 2
 
@@ -188,7 +188,7 @@ class stellar_modelling:
         c_P = self.c_P
         U = self._U(rho, r, m, T, kappa)
         nabla_stable = self._nabla_stable(L, T, m, rho, r, kappa)
-        nabla_ad = self._nabla_ad(rho, T)
+        nabla_ad = self._nabla_ad()
         l_m = H_P * self.alpha # mixing length
 
         K = 2 / l_m ** 2
@@ -204,7 +204,7 @@ class stellar_modelling:
         c_P = self.c_P
         U = self._U(rho, r, m, T, kappa)
         nabla_stable = self._nabla_stable(L, T, m, rho, r, kappa)
-        nabla_ad = self._nabla_ad(rho, T)
+        nabla_ad = self._nabla_ad()
         l_m = H_P * self.alpha # mixing length
         xi = self._xi(rho, T, r, m, L, kappa)
         v = np.sqrt( g / H_P ) * l_m/2 * xi
@@ -230,13 +230,10 @@ class stellar_modelling:
         """
         rho = self._rho(P, T)
         kappa = self._polation_opacity(T, rho)
-        g = self.G * m / r**2
-        H_P = self._H_P(rho, T, r, m)
-        l_m = H_P
-        U = self._U(rho, r, m, T, kappa)
+
         nabla_star = self._nabla_star(rho, T, r, m, L, kappa)
         nabla_stable = self._nabla_stable(L, T, m, rho, r, kappa)
-        nabla_ad = self._nabla_ad(rho, T)
+        nabla_ad = self._nabla_ad()
         F_con = - self._F_con(rho, T, r, m, L, kappa)
         F_rad = self._F_rad(rho, T, r, m, L, kappa)
 
@@ -256,15 +253,19 @@ class stellar_modelling:
             dT = nabla_star * T / P * dP                                       # convective and radiative transport
         else:
             dT = - 3 * kappa * L / (256 * np.pi**2 * self.sigma * r**4 * T**3) # radiative transport only
-
+        """
         dm_r = r / dr
         dm_P = P / dP
         dm_L = L / dL
         dm_T = T / dT
 
-        dm_list = np.array([dm_r, dm_P, dm_L, dm_T]) * p
+        dm_list = np.array([r / dr, dm_P, dm_L, dm_T]) * p
         dm = np.min(dm_list)
-
+        """
+        # implementing variable time step
+        f = np.array([dr, dP, dL, dT])
+        V = np.array([r, P, L, T])
+        dm = np.min(p * V / f)
 
         # new values
         r_new = r + dr * dm
@@ -308,11 +309,17 @@ class stellar_modelling:
             F_con.append(F_con_new)
             F_rad.append(F_con_new)
             i += 1
-            
+
         return np.array(mass), np.array(radius), np.array(luminosity), np.array(F_con)
 
     def _convergence(self):
         M, R, L, F_con = self._computation()
+
+        # removing last element which is negativ
+        M = M[:-1]
+        R = R[:-1]
+        L = L[:-1]
+
         x = np.linspace(0, len(M), len(M))
         plt.plot(x, M/np.max(M), label = r"M/M$_{max}$")
         plt.plot(x, L/np.max(L), label = r"L/L$_{max}$")
@@ -376,7 +383,7 @@ class stellar_modelling:
 
         # computing values
         nabla_stable_com = self._nabla_stable(L, T, M, rho, R, kappa)
-        nabla_ad_com = self._nabla_ad(rho, T)
+        nabla_ad_com = self._nabla_ad()
         nabla_star_com = self._nabla_star(rho, T, R, M, L, kappa)
         H_P_com = self._H_P(rho, T, R, M) / 1e6  # [Mm]
         U_com = self._U(rho, R, M, T, kappa)
@@ -403,7 +410,7 @@ class stellar_modelling:
         kappa = self._polation_opacity(T, rho)
 
         nabla_star = self._nabla_stable(self, L, T, M, rho, R, kappa)
-        nabla_ad = self._nabla_ad(self, rho, T)
+        nabla_ad = self._nabla_ad()
         nabla_stable = self._nabla_stable(self, L, T, M, rho, R, kappa)
 
 
@@ -412,7 +419,7 @@ S = stellar_modelling()
 S.readfile()
 #S._sanity_check_opacity()
 #S._sanity_check_gradient()
-S._computation()
-#S._convergence()
+#S._computation()
+S._convergence()
 #S._cross_section()
-#plt.show()
+plt.show()
