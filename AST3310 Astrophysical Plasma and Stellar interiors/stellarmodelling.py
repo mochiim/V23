@@ -76,6 +76,7 @@ class stellar_modelling:
         self.delta = 1
         self.alpha = 1
         self.a = 4 * self.sigma / self.c        # radiation density constant
+        self.c_P = 5/2 * self.k_B / (self.mu * self.m_u)
 
     def readfile(self):
         """
@@ -184,7 +185,7 @@ class stellar_modelling:
 
     def _xi(self, rho, T, r, m, L, kappa):
         H_P = self._H_P(rho, T, r, m)
-        c_P = self.k_B / (self.mu * self.m_u) * (3/2 * rho + 1)
+        c_P = self.c_P
         U = self._U(rho, r, m, T, kappa)
         nabla_stable = self._nabla_stable(L, T, m, rho, r, kappa)
         nabla_ad = self._nabla_ad(rho, T)
@@ -200,7 +201,7 @@ class stellar_modelling:
         """ Parcel velocity """
         g = self.G * m / r**2
         H_P = self._H_P(rho, T, r, m)
-        c_P = self.k_B / (self.mu * self.m_u) * (3/2 * rho + 1)
+        c_P = self.c_P
         U = self._U(rho, r, m, T, kappa)
         nabla_stable = self._nabla_stable(L, T, m, rho, r, kappa)
         nabla_ad = self._nabla_ad(rho, T)
@@ -216,13 +217,11 @@ class stellar_modelling:
         return H_p
 
     def _U(self, rho, r, m, T, kappa):
-        c_P = self._c_P(rho)
+        c_P = self.c_P
         g = self.G * m / r**2
         U = (64 * self.sigma * T**3) / (3 * kappa * rho**2 * c_P) * np.sqrt( self._H_P(rho, T, r, m) / g )
         return U
 
-    def _c_P(self, rho):
-        return self.k_B / (self.mu * self.m_u) * (3/2 * rho + 1)
 
     ########## Integration ##########
     def _integration(self, m, r, P, L, T, p = 0.001):
@@ -231,7 +230,6 @@ class stellar_modelling:
         """
         rho = self._rho(P, T)
         kappa = self._polation_opacity(T, rho)
-        c_P = self._c_P(rho)
         g = self.G * m / r**2
         H_P = self._H_P(rho, T, r, m)
         l_m = H_P
@@ -259,15 +257,14 @@ class stellar_modelling:
         else:
             dT = - 3 * kappa * L / (256 * np.pi**2 * self.sigma * r**4 * T**3) # radiative transport only
 
-        #dm_r = r / dr
-        #dm_P = P / dP
-        #dm_L = L / dL
-        #dm_T = T / dT
+        dm_r = r / dr
+        dm_P = P / dP
+        dm_L = L / dL
+        dm_T = T / dT
 
-        #dm_list = np.array([dm_r, dm_P, dm_L, dm_T]) * p
+        dm_list = np.array([dm_r, dm_P, dm_L, dm_T]) * p
+        dm = np.min(dm_list)
 
-        #dm = np.min(dm_list)
-        dm = np.min([abs(r * p / dr), abs(P * p / dP), abs(L * p / dL), abs(T * p / dT)])
 
         # new values
         r_new = r + dr * dm
@@ -292,10 +289,12 @@ class stellar_modelling:
         F_rad = []
 
         i = 0
-        while mass[i] > 0 and radius[i] > 0 and luminosity[i] > 0:
+        while radius[i] > 0 and mass[i] > 0 and luminosity[i] > 0:
             """
             While loop runs until we hit the stellar core, i.e. r = 0
             """
+            if mass[i] < 0:
+                print("Hjelp")
             r_new, P_new, L_new, T_new, M_new, rho_new, nabla_stable_new, nabla_star_new, F_con_new, F_rad_new = self._integration(mass[i], radius[i], pressure[i], luminosity[i], temperature[i])
 
             radius.append(r_new)
@@ -309,7 +308,7 @@ class stellar_modelling:
             F_con.append(F_con_new)
             F_rad.append(F_con_new)
             i += 1
-
+            
         return np.array(mass), np.array(radius), np.array(luminosity), np.array(F_con)
 
     def _convergence(self):
@@ -319,6 +318,10 @@ class stellar_modelling:
         plt.plot(x, L/np.max(L), label = r"L/L$_{max}$")
         plt.plot(x, R/np.max(R), label = r"R/R$_{max}$")
         plt.legend()
+
+        print(f"M: {M[-1]/self.M_0*100: 4.1f} %")
+        print(f"R: {R[-1]/self.R_0*100: 4.1f} %")
+        print(f"L: {L[-1]/self.L_0*100: 4.1f} %")
 
     def _cross_section(self):
         M, R, L, F_con = self._computation()
@@ -409,6 +412,7 @@ S = stellar_modelling()
 S.readfile()
 #S._sanity_check_opacity()
 #S._sanity_check_gradient()
-S._convergence()
+S._computation()
+#S._convergence()
 #S._cross_section()
-plt.show()
+#plt.show()
