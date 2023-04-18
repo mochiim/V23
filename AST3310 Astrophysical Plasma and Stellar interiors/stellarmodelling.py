@@ -77,6 +77,7 @@ class stellar_modelling:
         self.alpha = 1
         self.a = 4 * self.sigma / self.c        # radiation density constant
         self.c_P = 5/2 * self.k_B / (self.mu * self.m_u)
+        self.N_A = sc.N_A                # Avogadro's number [1/mol]
 
     def readfile(self):
         """
@@ -251,7 +252,7 @@ class stellar_modelling:
         # partial differential equations
         dr = 1 / (4 * np.pi * r**2 * rho)
         dP = - (self.G * m) / (4 * np.pi * r**4)
-        dL = eps
+        dL = eps*self.N_A
         #print(eps)
 
         # convetive instability check to determine dT
@@ -329,11 +330,11 @@ class stellar_modelling:
         P_0 = self._P(self.rho_0, self.T_0)
         x = np.linspace(0, len(M), len(M))
         plt.figure(figsize = (8, 4))
-        #plt.plot(x, M/np.max(M), label = r"M/M$_{max}$")
-        #plt.plot(x, L/np.max(L), label = r"L/L$_{max}$")
-        #plt.plot(x, R/np.max(R), label = r"R/R$_{max}$")
-        plt.plot(R/self.R_0, rho, label = r"$\rho$")
-        plt.yscale("log")
+        plt.plot(x, M/self.M_0, label = r"M/M$_{max}$")
+        plt.plot(x, L/self.L_0, label = r"L/L$_{max}$")
+        plt.plot(x, R/self.R_0, label = r"R/R$_{max}$")
+        #plt.plot(R/self.R_0, rho, label = r"$\rho$")
+        #plt.yscale("log")
         #plt.plot(x, P/P_0, label = "P")
         #plt.plot(x, eps, label = f"$\epsilon$")
 
@@ -349,7 +350,7 @@ class stellar_modelling:
         print(f"R: {R[-1]/self.R_0*100: 4.1f} %")
         print(f"L: {L[-1]/self.L_0*100: 4.1f} %")
 
-        #plt.show()
+
 
     def _cross_section(self):
         M, R, L, F_con, P, rho = self._computation()
@@ -443,3 +444,4 @@ S.readfile()
 #S._computation()
 S._convergence()
 #S._cross_section()
+plt.show()
