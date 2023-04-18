@@ -199,7 +199,6 @@ class stellar_modelling:
 
         K = 2 / l_m ** 2
         roots = np.roots(np.array([1, U / l_m ** 2, U / l_m ** 2 * K , -U / l_m ** 2 * (nabla_stable - nabla_ad)]))
-        #xi = roots.real[np.abs(roots.imag) < 1e-5][0] # 1e-5 is a threshold
         xi = roots[np.isreal(roots)].real[0]
         return xi
 
@@ -247,13 +246,12 @@ class stellar_modelling:
         star = energy(T, rho)                            # creating an instance in class energy with given temperature and density
         star.reaction_rates()                            # reaction rates calculated based on given temperature
         PP1, PP2, PP3, CNO, all = star.energy_production()
-        eps = all                     # total energy
+        eps = all                                        # total energy, epsilon = PP0 + PP1 + PP2 + PP3
 
         # partial differential equations
         dr = 1 / (4 * np.pi * r**2 * rho)
         dP = - (self.G * m) / (4 * np.pi * r**4)
-        dL = eps*self.N_A
-        #print(eps)
+        dL = eps
 
         # convetive instability check to determine dT
         if nabla_stable > nabla_ad:
@@ -273,10 +271,6 @@ class stellar_modelling:
         L_new = L + dL * dm
         T_new = T + dT * dm
         M_new = m + dm
-        #print(V/f)
-
-        if np.abs(M_new/self.M_0 - .1) < .05:
-            print(V/f, dm/p)
 
         return r_new, P_new, L_new, T_new, M_new, rho, nabla_stable, nabla_star, F_con, F_rad, eps
 
@@ -299,8 +293,6 @@ class stellar_modelling:
             """
             While loop runs until we hit the stellar core, i.e. r = 0
             """
-            if mass[i] < 0:
-                print("Hjelp")
             r_new, P_new, L_new, T_new, M_new, rho_new, nabla_stable_new, nabla_star_new, F_con_new, F_rad_new, eps = self._integration(mass[i], radius[i], pressure[i], luminosity[i], temperature[i])
 
             radius.append(r_new)
