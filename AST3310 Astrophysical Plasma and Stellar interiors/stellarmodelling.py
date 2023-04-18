@@ -114,12 +114,13 @@ class stellar_modelling:
             - Temperature, T [K]
             - Density, rho [kg m^-3].
         """
-        logR = np.log10( rho * .001 / (T * 1e6 )**3 ) # obtaining logR from rho [g/cm^3]
-        logT = np.log10(T)
-        log_kappa = self.polation_opacity(logT, logR)[0][0]
 
-        #if T > self.logT[-1] or T < self.logT[0] or _rho < self.logR[0] or _rho > self.logR[-1]:
-            #print("Warning! Input out of bounds with table. Proceeding with extrapolation")
+        logR = np.log10( rho*.001  / (T * 1e6 )**3 ) # obtaining logR from rho [g/cm^3]
+        logT = np.log10(T)
+        log_kappa = self.polation_opacity.ev(logT, logR)
+
+        #if T > self.logT[-1] or T < self.logT[0] or logR < self.logR[0] or logR > self.logR[-1]:
+        #    print("Warning! Input out of bounds with table. Proceeding with extrapolation")
 
         return 10**log_kappa * .1 # return SI units
 
@@ -137,19 +138,22 @@ class stellar_modelling:
         """
         Computing density in a star from equation of state for an ideal gas
         """
-
-        rho = P * self.mu * self.m_u / (self.k_B * T)
+        P_rad = self.a * T ** (4/3)
+        rho = (P - P_rad) * self.mu * self.m_u / (self.k_B * T)
         return rho
 
     ########## Gradients ##########
     def _nabla_stable(self, L, T, m, rho, r, kappa):
+        """ Stable temperature gradient """
         nabla_stable = (L * 3 * kappa * rho * self._H_P(rho, T, r, m)) / (4 * np.pi * r**2 * 16 * self.sigma * T**4)
         return nabla_stable
 
     def _nabla_ad(self):
+        """ Adiabatic temperature gradient """
         return 2/5 # valid for ideal gas
 
     def _nabla_star(self, rho, T, r, m, L, kappa):
+        """ Actual temperature gradient in star """
         xi = self._xi(rho, T, r, m, L, kappa)
         H_P = self._H_P(rho, T, r, m)
         l_m = H_P * self.alpha # mixing length
@@ -248,12 +252,14 @@ class stellar_modelling:
         dr = 1 / (4 * np.pi * r**2 * rho)
         dP = - (self.G * m) / (4 * np.pi * r**4)
         dL = eps
+        #print(eps)
 
         # convetive instability check to determine dT
         if nabla_stable > nabla_ad:
             dT = nabla_star * T / P * dP                                       # convective and radiative transport
         else:
             dT = - 3 * kappa * L / (256 * np.pi**2 * self.sigma * r**4 * T**3) # radiative transport only
+            nabla_star = nabla_stable
 
         # implementing variable time step
         f = np.array([dr, dP, dL, dT])
@@ -267,7 +273,8 @@ class stellar_modelling:
         T_new = T + dT * dm
         M_new = m + dm
 
-        return r_new, P_new, L_new, T_new, M_new, rho, nabla_stable, nabla_star, F_con, F_rad
+        #print(L_new)
+        return r_new, P_new, L_new, T_new, M_new, rho, nabla_stable, nabla_star, F_con, F_rad, eps
 
     def _computation(self):
         radius = [self.R_0]
@@ -281,6 +288,7 @@ class stellar_modelling:
         nabla_star = []
         F_con = []
         F_rad = []
+        eps_list = []
 
         i = 0
         while radius[i] > 0 and mass[i] > 0 and luminosity[i] > 0:
@@ -289,7 +297,7 @@ class stellar_modelling:
             """
             if mass[i] < 0:
                 print("Hjelp")
-            r_new, P_new, L_new, T_new, M_new, rho_new, nabla_stable_new, nabla_star_new, F_con_new, F_rad_new = self._integration(mass[i], radius[i], pressure[i], luminosity[i], temperature[i])
+            r_new, P_new, L_new, T_new, M_new, rho_new, nabla_stable_new, nabla_star_new, F_con_new, F_rad_new, eps = self._integration(mass[i], radius[i], pressure[i], luminosity[i], temperature[i])
 
             radius.append(r_new)
             pressure.append(P_new)
@@ -301,23 +309,30 @@ class stellar_modelling:
             nabla_star.append(nabla_star_new)
             F_con.append(F_con_new)
             F_rad.append(F_con_new)
+            eps_list.append(eps)
             i += 1
 
-        return np.array(mass), np.array(radius), np.array(luminosity), np.array(F_con)
+        return np.array(mass), np.array(radius), np.array(luminosity), np.array(F_con), np.array(pressure), np.array(density), np.array(eps_list)
 
     def _convergence(self):
-        M, R, L, F_con = self._computation()
+        M, R, L, F_con, P, rho, eps = self._computation()
 
         # removing last element which is negativ
         M = M[:-1]
         R = R[:-1]
         L = L[:-1]
+        P = P[:-1]
+        rho = rho[:-1]
 
         x = np.linspace(0, len(M), len(M))
         plt.figure(figsize = (8, 4))
-        plt.plot(x, M/np.max(M), label = r"M/M$_{max}$")
-        plt.plot(x, L/np.max(L), label = r"L/L$_{max}$")
-        plt.plot(x, R/np.max(R), label = r"R/R$_{max}$")
+        #plt.plot(x, M/np.max(M), label = r"M/M$_{max}$")
+        #plt.plot(x, L/np.max(L), label = r"L/L$_{max}$")
+        #plt.plot(x, R/np.max(R), label = r"R/R$_{max}$")
+        plt.plot(x, rho/np.max(rho), label = r"$\rho$")
+        plt.plot(x, P/np.max(P), label = "P")
+        #plt.plot(x, eps, label = f"$\epsilon$")
+
         plt.xlabel("steps")
         plt.title("Convergence test")
         plt.legend()
@@ -327,7 +342,7 @@ class stellar_modelling:
         print(f"L: {L[-1]/self.L_0*100: 4.1f} %")
 
     def _cross_section(self):
-        M, R, L, F_con = self._computation()
+        M, R, L, F_con, P, rho = self._computation()
         cross_section(R, L, F_con, show_every=20, sanity=False, savefig=False)
 
     ########## Sanity checks ##########
@@ -344,7 +359,7 @@ class stellar_modelling:
         kappa_SI_expected = [2.84e-3, 3.11e-3, 2.68e-3, 2.46e-3, 2.12e-3, 4.70e-3, 6.25e-3, 9.45e-3, 4.05e-3, 4.43e-3, 4.94e-3, 6.89e-3, 7.69e-3]
 
         # computed values
-        logkappa_cgs_computed = np.array([self.polation_opacity(logT[i], logR[i])[0][0] for i in range(len(logT))])
+        logkappa_cgs_computed = np.array([self.polation_opacity.ev(logT[i], logR[i]) for i in range(len(logT))])
         kappa_SI_computed = 10**logkappa_cgs_computed*.1
 
         table = pd.DataFrame({"logκ (cgs), exp"      :  logkappa_cgs_expected,

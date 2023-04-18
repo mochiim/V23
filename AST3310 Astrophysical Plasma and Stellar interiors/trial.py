@@ -121,14 +121,23 @@ class stellar_modelling:
             - Temperature, T [K]
             - Density, rho [kg m^-3].
         """
-        logR = np.log10(rho*1000/ (T * 1e6 )**3) # obtaining logR from rho [g/cm^3]
-        logT = T
+        logR = np.log10(rho*.001/ (T * 1e6 )**3) # obtaining logR from rho [g/cm^3]
+        logT = np.log(T)
         log_kappa = self.polation_opacity(logT, logR)[0][0]
 
         #if T > self.logT[-1] or T < self.logT[0] or _rho < self.logR[0] or _rho > self.logR[-1]:
             #print("Warning! Input out of bounds with table. Proceeding with extrapolation")
 
         return 10**log_kappa * .1 # return SI units
+
+    def _polation_epsilon(self, T, rho):
+        logR = np.log10(rho*1000/ (T * 1e6 )**3) # obtaining logR from rho [g/cm^3]
+        logT = np.log(T)
+        log_epsilon = self.polation_epsilon(logT, logR)[0][0]
+        #if T > self.logT[-1] or T < self.logT[0] or _rho < self.logR[0] or _rho > self.logR[-1]:
+            #print("Warning! Input out of bounds with table. Proceeding with extrapolation")
+
+        return 10**log_epsilon * .1 # return SI units
 
     def _P(self, rho, T):
         """
@@ -144,8 +153,8 @@ class stellar_modelling:
         """
         Computing density in a star from equation of state for an ideal gas
         """
-
-        rho = P * self.mu * self.m_u / (self.k_B * T)
+        P_rad = self.a * T ** (4/3)
+        rho = (P - P_rad) * self.mu * self.m_u / (self.k_B * T)
         return rho
 
     ########## Gradients ##########
@@ -250,6 +259,7 @@ class stellar_modelling:
         star.reaction_rates()                            # reaction rates calculated based on given temperature
         PP1, PP2, PP3, CNO = star.energy_production()
         eps = PP1 + PP2 + PP3 + CNO                      # total energy
+        #eps = self._polation_epsilon(T, rho)
 
         # partial differential equations
         dr = 1 / (4 * np.pi * r**2 * rho)
@@ -433,9 +443,9 @@ class stellar_modelling:
 S = stellar_modelling()
 S.readfile()
 #S._sanity_check_opacity()
-S._sanity_check_epsilon()
+#S._sanity_check_epsilon()
 #S._sanity_check_gradient()
 #S._computation()
-#S._convergence()
+S._convergence()
 #S._cross_section()
 plt.show()
