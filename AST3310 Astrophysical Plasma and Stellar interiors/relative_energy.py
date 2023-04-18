@@ -12,7 +12,7 @@ E_rel = np.zeros((4, n))      # relative energy production in a star
 for i in range(n):
     star = energy(T[i], rho)            # creating an instance in class energy with given temperature and density
     star.reaction_rates()               # reaction rates calculated based on given temperature
-    PP1, PP2, PP3, CNO = star.energy_production() # energy production
+    PP1, PP2, PP3, CNO, all = star.energy_production() # energy production
     E_tot = PP1 + PP2 + PP3 + CNO
 
     E_rel[0, i] = PP1/E_tot # PP1

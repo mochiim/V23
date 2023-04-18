@@ -152,6 +152,9 @@ class energy:
         PP3 = (self.Q[0] + self.Q[2]) * self.r_[2] + self.Q[5] * self.r_[5]
         CNO = self.r_[6]*self.Q[6]
 
+        sum = 0
+        for i in range(len(self.Q)):
+            sum += self.r_[i]*self.Q[i]
         """
         print(" Branch  |   Energy production [J kg^-1 s^-1]")
         print(f"PP1      |  {PP1: .3}")
@@ -160,7 +163,7 @@ class energy:
         print(f"CNO      |  {CNO: .3}")
         """
         #return PP1*value, PP2*value, PP3*value, CNO*value
-        return PP1, PP2, PP3, CNO
+        return PP1, PP2, PP3, CNO, sum
 
     def _sanitycheck(self, exp):
         """

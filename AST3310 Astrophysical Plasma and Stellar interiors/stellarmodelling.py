@@ -129,7 +129,7 @@ class stellar_modelling:
         Computing pressure in a star as a function of density (rho) and temperature (T) given by
         P = P_gas + P_rad
         """
-        P_rad = self.a * T ** (4/3)                    # radiation pressure
+        P_rad = (self.a / 3) * T ** 4                   # radiation pressure
         P_gas = rho*self.k_B*T / (self.mu*self.m_u)    # gas pressure
         P = P_rad + P_gas
         return P
@@ -245,8 +245,8 @@ class stellar_modelling:
         # obtaining epsilon from project 1
         star = energy(T, rho)                            # creating an instance in class energy with given temperature and density
         star.reaction_rates()                            # reaction rates calculated based on given temperature
-        PP1, PP2, PP3, CNO = star.energy_production()
-        eps = PP1 + PP2 + PP3 + CNO                      # total energy
+        PP1, PP2, PP3, CNO, all = star.energy_production()
+        eps = all                     # total energy
 
         # partial differential equations
         dr = 1 / (4 * np.pi * r**2 * rho)
@@ -262,9 +262,9 @@ class stellar_modelling:
             nabla_star = nabla_stable
 
         # implementing variable time step
-        f = np.array([dr, dP, dL, dT])
+        f = np.abs(np.array([dr, dP, dL, dT]))
         V = np.array([r, P, L, T])
-        dm = np.min(p * V / f)
+        dm = - np.min(p * V / f)
 
         # new values
         r_new = r + dr * dm
@@ -272,8 +272,11 @@ class stellar_modelling:
         L_new = L + dL * dm
         T_new = T + dT * dm
         M_new = m + dm
+        #print(V/f)
 
-        #print(L_new)
+        if np.abs(M_new/self.M_0 - .1) < .05:
+            print(V/f, dm/p)
+
         return r_new, P_new, L_new, T_new, M_new, rho, nabla_stable, nabla_star, F_con, F_rad, eps
 
     def _computation(self):
@@ -323,23 +326,30 @@ class stellar_modelling:
         L = L[:-1]
         P = P[:-1]
         rho = rho[:-1]
-
+        P_0 = self._P(self.rho_0, self.T_0)
         x = np.linspace(0, len(M), len(M))
         plt.figure(figsize = (8, 4))
         #plt.plot(x, M/np.max(M), label = r"M/M$_{max}$")
         #plt.plot(x, L/np.max(L), label = r"L/L$_{max}$")
         #plt.plot(x, R/np.max(R), label = r"R/R$_{max}$")
-        plt.plot(x, rho/np.max(rho), label = r"$\rho$")
-        plt.plot(x, P/np.max(P), label = "P")
+        plt.plot(R/self.R_0, rho, label = r"$\rho$")
+        plt.yscale("log")
+        #plt.plot(x, P/P_0, label = "P")
         #plt.plot(x, eps, label = f"$\epsilon$")
 
         plt.xlabel("steps")
         plt.title("Convergence test")
         plt.legend()
+        #print(rho[:5])
+        #print(rho[:5]/ self.rho_0)
+        #print(P[:5]/ P_0)
+
 
         print(f"M: {M[-1]/self.M_0*100: 4.1f} %")
         print(f"R: {R[-1]/self.R_0*100: 4.1f} %")
         print(f"L: {L[-1]/self.L_0*100: 4.1f} %")
+
+        #plt.show()
 
     def _cross_section(self):
         M, R, L, F_con, P, rho = self._computation()
@@ -433,4 +443,3 @@ S.readfile()
 #S._computation()
 S._convergence()
 #S._cross_section()
-plt.show()
