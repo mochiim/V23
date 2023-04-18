@@ -8,7 +8,7 @@ from energy_production import energy # project 1
 from cross_section import cross_section
 
 plt.style.use('ggplot')
-plt.rcParams['font.size'] = 16
+plt.rcParams['font.size'] = 14
 plt.rcParams["lines.linewidth"] = 2
 
 class stellar_modelling:
@@ -322,21 +322,20 @@ class stellar_modelling:
         P_0 = self._P(self.rho_0, self.T_0)
         x = np.linspace(0, len(M), len(M))
         plt.figure(figsize = (8, 4))
-        plt.plot(x, M/self.M_0, label = r"M/M$_{max}$")
-        plt.plot(x, L/self.L_0, label = r"L/L$_{max}$")
-        plt.plot(x, R/self.R_0, label = r"R/R$_{max}$")
+        plt.plot(x, M/self.M_0, label = r"M/M$_{0}$")
+        plt.plot(x, L/self.L_0, label = r"L/L$_{0}$")
+        plt.plot(x, R/self.R_0, label = r"R/R$_{0}$")
         #plt.plot(R/self.R_0, rho, label = r"$\rho$")
         #plt.yscale("log")
         #plt.plot(x, P/P_0, label = "P")
         #plt.plot(x, eps, label = f"$\epsilon$")
 
-        plt.xlabel("steps")
+        plt.xlabel("Iterations")
         plt.title("Convergence test")
         plt.legend()
         #print(rho[:5])
         #print(rho[:5]/ self.rho_0)
         #print(P[:5]/ P_0)
-
 
         print(f"M: {M[-1]/self.M_0*100: 4.1f} %")
         print(f"R: {R[-1]/self.R_0*100: 4.1f} %")
