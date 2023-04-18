@@ -229,7 +229,7 @@ class stellar_modelling:
 
 
     ########## Integration ##########
-    def _integration(self, m, r, P, L, T, p = 0.001):
+    def _integration(self, m, r, P, L, T, p = 0.01):
         """
         Forward euler
         """
@@ -252,7 +252,6 @@ class stellar_modelling:
         dr = 1 / (4 * np.pi * r**2 * rho)
         dP = - (self.G * m) / (4 * np.pi * r**4)
         dL = eps
-
         # convetive instability check to determine dT
         if nabla_stable > nabla_ad:
             dT = nabla_star * T / P * dP                                       # convective and radiative transport
@@ -308,10 +307,10 @@ class stellar_modelling:
             eps_list.append(eps)
             i += 1
 
-        return np.array(mass), np.array(radius), np.array(luminosity), np.array(F_con), np.array(pressure), np.array(density), np.array(eps_list)
+        return np.array(mass), np.array(radius), np.array(luminosity), np.array(F_con), np.array(pressure), np.array(density), np.array(nabla_stable), np.array(nabla_star)
 
     def _convergence(self):
-        M, R, L, F_con, P, rho, eps = self._computation()
+        M, R, L, F_con, P, rho, nabla_stable, nabla_star = self._computation()
 
         # removing last element which is negativ
         M = M[:-1]
@@ -322,13 +321,16 @@ class stellar_modelling:
         P_0 = self._P(self.rho_0, self.T_0)
         x = np.linspace(0, len(M), len(M))
         plt.figure(figsize = (8, 4))
-        plt.plot(x, M/self.M_0, label = r"M/M$_{0}$")
-        plt.plot(x, L/self.L_0, label = r"L/L$_{0}$")
-        plt.plot(x, R/self.R_0, label = r"R/R$_{0}$")
+        #plt.plot(x, M/self.M_0, label = r"M/M$_{0}$")
+        #plt.plot(x, L/self.L_0, label = r"L/L$_{0}$")
+        #plt.plot(x, R/self.R_0, label = r"R/R$_{0}$")
         #plt.plot(R/self.R_0, rho, label = r"$\rho$")
         #plt.yscale("log")
         #plt.plot(x, P/P_0, label = "P")
         #plt.plot(x, eps, label = f"$\epsilon$")
+
+        plt.plot(x, P/np.max(P), label = "P")
+        plt.plot(x, rho/np.max(rho), label = r"$\rho$")
 
         plt.xlabel("Iterations")
         plt.title("Convergence test")
@@ -415,16 +417,11 @@ class stellar_modelling:
         return None
 
     def _sanity_check_temperatures_gradient_plot(self):
-        M = self.M_0
-        L = self.L_0
-        T = self.T_0
-        R = self.R_0
-        rho = self.rho_0
-        kappa = self._polation_opacity(T, rho)
-
-        nabla_star = self._nabla_stable(self, L, T, M, rho, R, kappa)
-        nabla_ad = self._nabla_ad()
-        nabla_stable = self._nabla_stable(self, L, T, M, rho, R, kappa)
+        M, R, L, F_con, P, rho, nabla_stable, nabla_star = self._computation()
+        R = R[:-1]
+        plt.plot(R/self.R_sun, nabla_star, label = r"$\nabla^*$")
+        plt.plot(R/self.R_sun, nabla_stable, label = r"$\nabla_{stable}$")
+        plt.legend()
 
 
 
@@ -435,4 +432,5 @@ S.readfile()
 #S._computation()
 S._convergence()
 #S._cross_section()
+#S._sanity_check_temperatures_gradient_plot()
 plt.show()
