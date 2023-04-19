@@ -40,6 +40,17 @@ class stellar_modelling:
         _sanity_check_temperatures_gradient_plot()
     """
     def __init__(self, value = int):
+        # mass fraction
+        self.X = .7                         # hydrogen
+        self.Y_He3 = 1e-10                  # helium 3
+        self.Y = .29                        # helium 4
+        self.Z_Li7 = 10e-7                  # lithium 7
+        self.Z_Be7 = 10e-7                  # beryllium 7
+        self.Z_N14 = 10e-11                 # nitrogen 14
+
+        # mean molecular weight per particle
+        self.mu = 1 / (2*self.X + self.Y_He3 + 3/4*self.Y + 4/7*self.Z_Li7 + 5/7*self.Z_Be7 + 8/14*self.Z_N14)
+
         # useful constants
         self.k_B = sc.k                     # Boltzmann constant [J K^-1]
         self.m_u = sc.m_u                   # atomic mass unit [kg]
@@ -60,24 +71,12 @@ class stellar_modelling:
         self.M_0 = self.M_sun               # solar radius [m]
         self.rho_0 = 1.42e-7*self.rho_sun   # density [kg m^-3]
         self.T_0 = 5770                     # [K]
+        self.P_0 = self._P(self.rho_0, self.T_0)
 
-        # mass fraction
-        self.X = .7                         # hydrogen
-        self.Y_He3 = 1e-10                  # helium 3
-        self.Y = .29                        # helium 4
-        self.Z_Li7 = 10e-7                  # lithium 7
-        self.Z_Be7 = 10e-7                  # beryllium 7
-        self.Z_N14 = 10e-11                 # nitrogen 14
-
-        # mean molecular weight per particle
-        self.mu = 1 / (2*self.X + self.Y_He3 + 3/4*self.Y + 4/7*self.Z_Li7 + 5/7*self.Z_Be7 + 8/14*self.Z_N14)
-
-        #
-        self.delta = 1
         self.alpha = 1
         self.a = 4 * self.sigma / self.c        # radiation density constant
         self.c_P = 5/2 * self.k_B / (self.mu * self.m_u)
-        self.N_A = sc.N_A                # Avogadro's number [1/mol]
+        self.eV = sc.eV     # [J]
 
     def readfile(self):
         """
@@ -189,6 +188,8 @@ class stellar_modelling:
         F_con = (nabla_stable - nabla_star) / nabla_stable
         return F_con
 
+    ########################
+
     def _xi(self, rho, T, r, m, L, kappa):
         H_P = self._H_P(rho, T, r, m)
         c_P = self.c_P
@@ -228,7 +229,7 @@ class stellar_modelling:
         return U
 
 
-    ########## Integration ##########
+    ########## Main body ##########
     def _integration(self, m, r, P, L, T, p = 0.01):
         """
         Forward euler
@@ -246,12 +247,13 @@ class stellar_modelling:
         star = energy(T, rho)                            # creating an instance in class energy with given temperature and density
         star.reaction_rates()                            # reaction rates calculated based on given temperature
         PP1, PP2, PP3, CNO, all = star.energy_production()
-        eps = all                                        # total energy, epsilon = PP0 + PP1 + PP2 + PP3
+        eps = all * (1e6*self.eV)                        # epsilon = PP0 + PP1 + PP2 + PP3 [J]
 
         # partial differential equations
         dr = 1 / (4 * np.pi * r**2 * rho)
         dP = - (self.G * m) / (4 * np.pi * r**4)
         dL = eps
+
         # convetive instability check to determine dT
         if nabla_stable > nabla_ad:
             dT = nabla_star * T / P * dP                                       # convective and radiative transport
@@ -275,8 +277,7 @@ class stellar_modelling:
 
     def _computation(self):
         radius = [self.R_0]
-        P_0 = self._P(self.rho_0, self.T_0)
-        pressure = [P_0]
+        pressure = [self.P_0]
         luminosity = [self.L_0]
         temperature = [self.T_0]
         mass = [self.M_0]
@@ -318,19 +319,19 @@ class stellar_modelling:
         L = L[:-1]
         P = P[:-1]
         rho = rho[:-1]
-        P_0 = self._P(self.rho_0, self.T_0)
+        #P_0 = self._P(self.rho_0, self.T_0)
         x = np.linspace(0, len(M), len(M))
         plt.figure(figsize = (8, 4))
-        #plt.plot(x, M/self.M_0, label = r"M/M$_{0}$")
-        #plt.plot(x, L/self.L_0, label = r"L/L$_{0}$")
-        #plt.plot(x, R/self.R_0, label = r"R/R$_{0}$")
+        plt.plot(x, M/self.M_0, label = r"M/M$_{0}$")
+        plt.plot(x, L/self.L_0, label = r"L/L$_{0}$")
+        plt.plot(x, R/self.R_0, label = r"R/R$_{0}$")
         #plt.plot(R/self.R_0, rho, label = r"$\rho$")
         #plt.yscale("log")
         #plt.plot(x, P/P_0, label = "P")
         #plt.plot(x, eps, label = f"$\epsilon$")
 
-        plt.plot(x, P/np.max(P), label = "P")
-        plt.plot(x, rho/np.max(rho), label = r"$\rho$")
+        #plt.plot(x, P/np.max(P), label = "P")
+        #plt.plot(x, rho/np.max(rho), label = r"$\rho$")
 
         plt.xlabel("Iterations")
         plt.title("Convergence test")
@@ -342,8 +343,6 @@ class stellar_modelling:
         print(f"M: {M[-1]/self.M_0*100: 4.1f} %")
         print(f"R: {R[-1]/self.R_0*100: 4.1f} %")
         print(f"L: {L[-1]/self.L_0*100: 4.1f} %")
-
-
 
     def _cross_section(self):
         M, R, L, F_con, P, rho = self._computation()
