@@ -292,7 +292,7 @@ class stellar_modelling:
         #print(f"dm: {dm}")
         #print(f"M_new: {M_new}")
 
-        return r_new, P_new, L_new, T_new, M_new, rho, nabla_stable, nabla_star, F_con, F_rad
+        return r_new, P_new, L_new, T_new, M_new, rho, nabla_stable, nabla_star, F_con, F_rad, eps
 
     def _computation(self):
         """
@@ -311,13 +311,14 @@ class stellar_modelling:
         nabla_star = []
         F_con = []
         F_rad = []
+        eps_list =[]
 
         i = 0
         while radius[i] > 0 and mass[i] > 0 and luminosity[i] > 0:
             """
             While loop runs until we hit the stellar core, i.e. r = 0
             """
-            r_new, P_new, L_new, T_new, M_new, rho_new, nabla_stable_new, nabla_star_new, F_con_new, F_rad_new = self._integration(mass[i], radius[i], pressure[i], luminosity[i], temperature[i])
+            r_new, P_new, L_new, T_new, M_new, rho_new, nabla_stable_new, nabla_star_new, F_con_new, F_rad_new, eps= self._integration(mass[i], radius[i], pressure[i], luminosity[i], temperature[i])
 
             radius.append(r_new)
             pressure.append(P_new)
@@ -329,12 +330,13 @@ class stellar_modelling:
             nabla_star.append(nabla_star_new)
             F_con.append(F_con_new)
             F_rad.append(F_con_new)
+            eps_list.append(eps)
             i += 1
 
-        return np.array(mass), np.array(radius), np.array(luminosity), np.array(F_con), np.array(pressure), np.array(density), np.array(nabla_stable), np.array(nabla_star)
+        return np.array(mass), np.array(radius), np.array(luminosity), np.array(F_con), np.array(pressure), np.array(density), np.array(nabla_stable), np.array(nabla_star), np.array(eps_list)
 
     def _convergence(self):
-        M, R, L, F_con, P, rho, nabla_stable, nabla_star = self._computation()
+        M, R, L, F_con, P, rho, nabla_stable, nabla_star, eps = self._computation()
 
         # removing last element which is negativ
         M = M[:-1]
@@ -343,17 +345,19 @@ class stellar_modelling:
         P = P[:-1]
         rho = rho[:-1]
 
-        """
         iterations = np.linspace(0, len(M), len(M))
         plt.figure(figsize = (8, 4))
-        plt.plot(iterations, M/self.M_0, label = r"M/M$_{0}$")
-        plt.plot(iterations, L/self.L_0, label = r"L/L$_{0}$")
-        plt.plot(iterations, R/self.R_0, label = r"R/R$_{0}$")
+        #plt.plot(iterations, M/self.M_0, label = r"M/M$_{0}$")
+        #plt.plot(iterations, L/self.L_0, label = r"L/L$_{0}$")
+        #plt.plot(iterations, R/self.R_0, label = r"R/R$_{0}$")
+        plt.plot(R/np.max(R), eps, label = "eps")
+        plt.yscale("log")
+        print(eps[0], eps[-1])
 
         plt.xlabel("Iterations")
         plt.title("Convergence test")
         plt.legend()
-        """
+
 
         print(f"M/M_0: {M[-1]/self.M_0*100: 4.1f} %")
         print(f"R/R_0: {R[-1]/self.R_0*100: 4.1f} %")
