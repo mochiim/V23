@@ -114,8 +114,8 @@ class stellar_modelling:
             - Temperature, T [K]
             - Density, rho [kg m^-3].
         """
-
-        logR = np.log10( rho*.001  / (T * 1e6 )**3 ) # obtaining logR from rho [g/cm^3]
+        _rho = rho * .001 # cgs -> SI units
+        logR = np.log10( _rho / (T * 1e6 )**3 ) # obtaining logR from rho
         logT = np.log10(T)
         log_kappa = self.polation_opacity.ev(logT, logR)
 
@@ -139,10 +139,10 @@ class stellar_modelling:
         Computing density in a star from equation of state for an ideal gas
         """
         P_rad = self.a * T ** (4/3)
-        rho = (P - P_rad) * self.mu * self.m_u / (self.k_B * T)
+        rho = ( (P - P_rad) * self.mu * self.m_u ) / (self.k_B * T)
         return rho
 
-####################  Gradients ####################
+####################  Temperature gradients ####################
     def _nabla_stable(self, L, T, m, rho, r, kappa):
         """ Stable temperature gradient """
         nabla_stable = (L * 3 * kappa * rho * self._H_P(rho, T, r, m)) / (64 * np.pi * r**2 * self.sigma * T**4)
@@ -197,6 +197,7 @@ class stellar_modelling:
 ##############################################
 
     def _xi(self, rho, T, r, m, L, kappa):
+        """ Calculating the cubic polynomial in order to express _nabla_star() """
         H_P = self._H_P(rho, T, r, m)
         c_P = self.c_P
         U = self._U(rho, r, m, T, kappa)
@@ -229,17 +230,24 @@ class stellar_modelling:
         return H_p
 
     def _U(self, rho, r, m, T, kappa):
+
         c_P = self.c_P
         g = self.G * m / r**2
         U = (64 * self.sigma * T**3) / (3 * kappa * rho**2 * c_P) * np.sqrt( self._H_P(rho, T, r, m) / g )
         return U
-
 
 ####################  Main body ####################
     def _integration(self, m, r, P, L, T, p = 0.01):
         """
         Euler's method to solve the four partial differential
         equations from the stellar surface and to the core.
+
+        Arguments:
+        m - mass
+        r - radius
+        P - pressure
+        L - luminosisty
+        T - temperature
         """
         rho = self._rho(P, T)
         kappa = self._polation_opacity(T, rho)
@@ -279,6 +287,10 @@ class stellar_modelling:
         L_new = L + dL * dm
         T_new = T + dT * dm
         M_new = m + dm
+
+
+        #print(f"dm: {dm}")
+        #print(f"M_new: {M_new}")
 
         return r_new, P_new, L_new, T_new, M_new, rho, nabla_stable, nabla_star, F_con, F_rad
 
@@ -330,6 +342,7 @@ class stellar_modelling:
         L = L[:-1]
         P = P[:-1]
         rho = rho[:-1]
+
         """
         iterations = np.linspace(0, len(M), len(M))
         plt.figure(figsize = (8, 4))
@@ -341,9 +354,10 @@ class stellar_modelling:
         plt.title("Convergence test")
         plt.legend()
         """
-        print(f"M: {M[-1]/self.M_0*100: 4.1f} %")
-        print(f"R: {R[-1]/self.R_0*100: 4.1f} %")
-        print(f"L: {L[-1]/self.L_0*100: 4.1f} %")
+
+        print(f"M/M_0: {M[-1]/self.M_0*100: 4.1f} %")
+        print(f"R/R_0: {R[-1]/self.R_0*100: 4.1f} %")
+        print(f"L/L_0: {L[-1]/self.L_0*100: 4.1f} %")
 
     def _cross_section(self):
         """
@@ -429,13 +443,13 @@ class stellar_modelling:
         plt.legend()
 
 
-
-S = stellar_modelling()
-S.readfile()
-#S._sanity_check_opacity()
-#S._sanity_check_gradient()
-#S._computation()
-S._convergence()
-S._cross_section()
-#S._sanity_check_temperatures_gradient_plot()
-plt.show()
+if __name__ == "__main__":
+    S = stellar_modelling()
+    S.readfile()
+    #S._sanity_check_opacity()
+    #S._sanity_check_gradient()
+    #S._computation()
+    S._convergence()
+    #S._cross_section()
+    #S._sanity_check_temperatures_gradient_plot()
+    plt.show()
