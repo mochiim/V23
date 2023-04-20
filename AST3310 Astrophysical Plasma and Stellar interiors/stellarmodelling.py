@@ -287,11 +287,6 @@ class stellar_modelling:
         L_new = L + dL * dm
         T_new = T + dT * dm
         M_new = m + dm
-
-
-        #print(f"dm: {dm}")
-        #print(f"M_new: {M_new}")
-
         return r_new, P_new, L_new, T_new, M_new, rho, nabla_stable, nabla_star, F_con, F_rad, eps
 
     def _computation(self):
@@ -333,12 +328,13 @@ class stellar_modelling:
             eps_list.append(eps)
             i += 1
 
-        return np.array(mass), np.array(radius), np.array(luminosity), np.array(F_con), np.array(pressure), np.array(density), np.array(nabla_stable), np.array(nabla_star), np.array(eps_list)
+        return np.array(temperature), np.array(mass), np.array(radius), np.array(luminosity), np.array(F_con), np.array(pressure), np.array(density), np.array(nabla_stable), np.array(nabla_star), np.array(eps_list)
 
     def _convergence(self):
-        M, R, L, F_con, P, rho, nabla_stable, nabla_star, eps = self._computation()
+        T, M, R, L, F_con, P, rho, nabla_stable, nabla_star, eps = self._computation()
 
         # removing last element which is negativ
+        T = T[:-1]
         M = M[:-1]
         R = R[:-1]
         L = L[:-1]
@@ -346,18 +342,18 @@ class stellar_modelling:
         rho = rho[:-1]
 
         iterations = np.linspace(0, len(M), len(M))
-        plt.figure(figsize = (8, 4))
-        #plt.plot(iterations, M/self.M_0, label = r"M/M$_{0}$")
-        #plt.plot(iterations, L/self.L_0, label = r"L/L$_{0}$")
-        #plt.plot(iterations, R/self.R_0, label = r"R/R$_{0}$")
-        plt.plot(R/np.max(R), eps, label = "eps")
-        plt.yscale("log")
-        print(eps[0], eps[-1])
+        fig, ax = plt.subplots(2, 1, figsize = (8, 8))
+        ax[0].plot(iterations, M/self.M_0, label = r"M/M$_{0}$")
+        ax[0].plot(iterations, L/self.L_0, label = r"L/L$_{0}$")
+        ax[0].plot(iterations, R/self.R_0, label = r"R/R$_{0}$")
+        ax[0].set_xlabel("Iterations")
+        ax[0].legend()
 
-        plt.xlabel("Iterations")
-        plt.title("Convergence test")
-        plt.legend()
-
+        ax[1].plot(R / self.R_0, T /  self.T_0, label = r"T/T$_0$")
+        ax[1].plot(R / self.R_0, P /  self.P_0, label = r"P/P$_0$")
+        ax[1].plot(R / self.R_0, rho / self.rho_0, label = r"$\rho/\rho_0$")
+        ax[1].set_xlabel(r"R/R$_0$")
+        ax[1].legend()
 
         print(f"M/M_0: {M[-1]/self.M_0*100: 4.1f} %")
         print(f"R/R_0: {R[-1]/self.R_0*100: 4.1f} %")
@@ -367,7 +363,7 @@ class stellar_modelling:
         """
         Plotting the cross section of the star.
         """
-        M, R, L, F_con, P, rho, nabla_stable, nabla_star = self._computation()
+        T, M, R, L, F_con, P, rho, nabla_stable, nabla_star = self._computation()
         cross_section(R, L, F_con, show_every=20, sanity=False, savefig=False)
 
 #################### Sanity checks ####################
