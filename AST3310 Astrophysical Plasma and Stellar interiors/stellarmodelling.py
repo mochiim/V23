@@ -8,8 +8,6 @@ from energy_production import energy # project 1
 from cross_section import cross_section
 
 plt.style.use('ggplot')
-plt.rcParams['font.size'] = 14
-plt.rcParams["lines.linewidth"] = 2
 
 class stellar_modelling:
     """
@@ -21,32 +19,32 @@ class stellar_modelling:
         _polation_opacity(T, rho) - inter/extrapolate values tables read in _readfile()
         _P(rho, T) - computes pressure in a star for a given density and temperature
         _rho(P, T) - computes density in a star for a given pressure and temperature
-        _nabla_stable() -
-        _nabla_ad()
-        _nabla_star() 0
-        _nabla_p() -
-        _F_rad() -
-        _F_con() -
-        _xi() -
-        _v()
-        _H_P()
-        _U
-        _integration()
-        _computation()
-        _convergence()
-        _cross_section()
-        _sanity_check_opacity()
-        _sanity_check_gradient()
-        _sanity_check_temperatures_gradient_plot()
+        _nabla_stable() - computes the stable temperature gradient
+        _nabla_ad() - stores the value for adiabatic temperature gradient
+        _nabla_star() - computes the actual temperature gradient of the star
+        _nabla_p() - computes the temperature gradient of the parcel
+        _F_rad() - computes radiative flux
+        _F_con() - computes convective flux
+        _xi() - solves cubic polynomial used to express _nabla_star()
+        _v() - computes parcel velocity
+        _H_P() - computes pressure scale height
+        _U - computes quantity U
+        _integration() - uses Euler's method to solve 4 PDEs
+        _computation() - initiate _integration() method
+        _convergence() - check for convergence of computed values
+        _cross_section() - plot cross section
+        _sanity_check_opacity() - sanity check for opacity table
+        _sanity_check_gradient() - sanity check from example 5.1
+        _sanity_check_temperatures_gradient_plot() - sanity check for temperature gradients
     """
     def __init__(self, value = int):
         # mass fraction
         self.X = .7                         # hydrogen
         self.Y_He3 = 1e-10                  # helium 3
         self.Y = .29                        # helium 4
-        self.Z_Li7 = 10e-7                  # lithium 7
-        self.Z_Be7 = 10e-7                  # beryllium 7
-        self.Z_N14 = 10e-11                 # nitrogen 14
+        self.Z_Li7 = 1e-7                  # lithium 7
+        self.Z_Be7 = 1e-7                  # beryllium 7
+        self.Z_N14 = 1e-11                 # nitrogen 14
 
         # mean molecular weight per particle
         self.mu = 1 / (2*self.X + self.Y_He3 + 3/4*self.Y + 4/7*self.Z_Li7 + 5/7*self.Z_Be7 + 8/14*self.Z_N14)
@@ -115,7 +113,7 @@ class stellar_modelling:
             - Density, rho [kg m^-3].
         """
         _rho = rho * .001 # cgs -> SI units
-        logR = np.log10( _rho / (T * 1e6 )**3 ) # obtaining logR from rho
+        logR = np.log10( _rho / (T * 1e-6 )**3 ) # obtaining logR from rho
         logT = np.log10(T)
         log_kappa = self.polation_opacity.ev(logT, logR)
 
@@ -233,7 +231,8 @@ class stellar_modelling:
 
         c_P = self.c_P
         g = self.G * m / r**2
-        U = (64 * self.sigma * T**3) / (3 * kappa * rho**2 * c_P) * np.sqrt( self._H_P(rho, T, r, m) / g )
+        H_P = self._H_P(rho, T, r, m)
+        U = (64 * self.sigma * T**3) / (3 * kappa * rho**2 * c_P) * np.sqrt( H_P / g )
         return U
 
 ####################  Main body ####################
@@ -272,6 +271,7 @@ class stellar_modelling:
         # convetive instability check to determine dT
         if nabla_stable > nabla_ad:
             dT = nabla_star * T / P * dP                                       # convective and radiative transport
+            nabla_star = nabla_star
         else:
             dT = - 3 * kappa * L / (256 * np.pi**2 * self.sigma * r**4 * T**3) # radiative transport only
             nabla_star = nabla_stable
@@ -328,10 +328,11 @@ class stellar_modelling:
             eps_list.append(eps)
             i += 1
 
-        return np.array(temperature), np.array(mass), np.array(radius), np.array(luminosity), np.array(F_con), np.array(pressure), np.array(density), np.array(nabla_stable), np.array(nabla_star), np.array(eps_list)
+        return np.array(temperature), np.array(mass), np.array(radius), np.array(luminosity), np.array(F_con), np.array(F_rad),\
+               np.array(pressure), np.array(density), np.array(nabla_stable), np.array(nabla_star), np.array(eps_list)
 
     def _convergence(self):
-        T, M, R, L, F_con, P, rho, nabla_stable, nabla_star, eps = self._computation()
+        T, M, R, L, F_con, F_rad, P, rho, nabla_stable, nabla_star, eps = self._computation()
 
         # removing last element which is negativ
         T = T[:-1]
@@ -341,30 +342,10 @@ class stellar_modelling:
         P = P[:-1]
         rho = rho[:-1]
 
-        iterations = np.linspace(0, len(M), len(M))
-        fig, ax = plt.subplots(2, 1, figsize = (8, 8))
-        ax[0].plot(iterations, M/self.M_0, label = r"M/M$_{0}$")
-        ax[0].plot(iterations, L/self.L_0, label = r"L/L$_{0}$")
-        ax[0].plot(iterations, R/self.R_0, label = r"R/R$_{0}$")
-        ax[0].set_xlabel("Iterations")
-        ax[0].legend()
-
-        ax[1].plot(R / self.R_0, T /  self.T_0, label = r"T/T$_0$")
-        ax[1].plot(R / self.R_0, P /  self.P_0, label = r"P/P$_0$")
-        ax[1].plot(R / self.R_0, rho / self.rho_0, label = r"$\rho/\rho_0$")
-        ax[1].set_xlabel(r"R/R$_0$")
-        ax[1].legend()
-
         print(f"M/M_0: {M[-1]/self.M_0*100: 4.1f} %")
         print(f"R/R_0: {R[-1]/self.R_0*100: 4.1f} %")
         print(f"L/L_0: {L[-1]/self.L_0*100: 4.1f} %")
 
-    def _cross_section(self):
-        """
-        Plotting the cross section of the star.
-        """
-        T, M, R, L, F_con, P, rho, nabla_stable, nabla_star = self._computation()
-        cross_section(R, L, F_con, show_every=20, sanity=False, savefig=False)
 
 #################### Sanity checks ####################
 
@@ -434,13 +415,18 @@ class stellar_modelling:
         return None
 
     def _sanity_check_temperatures_gradient_plot(self):
-        M, R, L, F_con, P, rho, nabla_stable, nabla_star = self._computation()
+        T, M, R, L, F_con, F_rad, P, rho, nabla_stable, nabla_star, eps = self._computation()
         R = R[:-1]
-        plt.plot(R/self.R_sun, nabla_star, label = r"$\nabla^*$")
+        plt.figure(figsize = (6, 4))
         plt.plot(R/self.R_sun, nabla_stable, label = r"$\nabla_{stable}$")
+        plt.plot(R/self.R_sun, nabla_star, label = r"$\nabla^*$")
         plt.hlines(self._nabla_ad(), 0, 1, label = r"$\nabla_{ad}$", color = "purple")
+        plt.xlabel(r"$R/R_0$")
+        plt.ylabel(r"$\nabla$")
         plt.yscale("log")
         plt.legend()
+        plt.title("Temperature gradients (for p = 0.01)")
+        plt.savefig("sanity_temperature_gradients2.png")
 
 
 if __name__ == "__main__":
@@ -448,8 +434,10 @@ if __name__ == "__main__":
     S.readfile()
     #S._sanity_check_opacity()
     #S._sanity_check_gradient()
-    #S._computation()
-    S._convergence()
-    #S._cross_section()
     #S._sanity_check_temperatures_gradient_plot()
+    S._convergence()
+
+    T, M, R, L, F_con, F_rad, P, rho, nabla_stable, nabla_star, eps = S._computation()
+    cross_section(R, L, F_con, show_every = 50, sanity = False, savefig = False)
+
     plt.show()
