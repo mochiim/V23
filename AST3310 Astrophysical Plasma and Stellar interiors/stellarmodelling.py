@@ -438,6 +438,6 @@ if __name__ == "__main__":
     S._convergence()
 
     T, M, R, L, F_con, F_rad, P, rho, nabla_stable, nabla_star, eps = S._computation()
-    cross_section(R, L, F_con, show_every = 50, sanity = False, savefig = False)
+    cross_section(R, L, F_con, show_every = 50, sanity = False, savefig = True)
 
     plt.show()

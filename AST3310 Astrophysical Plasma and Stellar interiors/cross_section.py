@@ -69,4 +69,4 @@ def cross_section(R, L, F_C, show_every=20, sanity=False, savefig=False):
         if sanity:
             fig.savefig('sanity_cross_section.png', dpi=300)
         else:
-            fig.savefig('1.25_R0.png', dpi=300)
+            fig.savefig('final_cross_section.png', dpi=300)
