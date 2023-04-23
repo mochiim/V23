@@ -13,29 +13,6 @@ class stellar_modelling:
     """
     This class involves modelling the central part of a Sun-like star,
     including both radiative and convective energy transport.
-
-    The class contains the following functions:
-        _readfile() - reads files "opacity.txt" and "epsilon.txt"
-        _polation_opacity(T, rho) - inter/extrapolate values tables read in _readfile()
-        _P(rho, T) - computes pressure in a star for a given density and temperature
-        _rho(P, T) - computes density in a star for a given pressure and temperature
-        _nabla_stable() - computes the stable temperature gradient
-        _nabla_ad() - stores the value for adiabatic temperature gradient
-        _nabla_star() - computes the actual temperature gradient of the star
-        _nabla_p() - computes the temperature gradient of the parcel
-        _F_rad() - computes radiative flux
-        _F_con() - computes convective flux
-        _xi() - solves cubic polynomial used to express _nabla_star()
-        _v() - computes parcel velocity
-        _H_P() - computes pressure scale height
-        _U - computes quantity U
-        _integration() - uses Euler's method to solve 4 PDEs
-        _computation() - initiate _integration() method
-        _convergence() - check for convergence of computed values
-        _cross_section() - plot cross section
-        _sanity_check_opacity() - sanity check for opacity table
-        _sanity_check_gradient() - sanity check from example 5.1
-        _sanity_check_temperatures_gradient_plot() - sanity check for temperature gradients
     """
     def __init__(self, value = int):
         # mass fraction
@@ -347,6 +324,39 @@ class stellar_modelling:
         print(f"R/R_0: {R[-1]/self.R_0*100: 4.1f} %")
         print(f"L/L_0: {L[-1]/self.L_0*100: 4.1f} %")
 
+#################### Plotting ####################
+    def _plotting(self, main_parameters = False, energy_transport = False):
+
+        T, M, R, L, F_con, F_rad, P, rho, nabla_stable, nabla_star, eps = S._computation()
+
+        if main_parameters:
+            fig, ax = plt.subplots(3, sharex = True, figsize = (6,5))
+            ax[0].plot(R/self.R_0, M/self.M_0, label = r"$M/M_0$")
+            ax[0].plot(R/self.R_0, L/self.L_0, label = r"$L/L_0$")
+            ax[0].invert_xaxis()
+            ax[0].legend()
+            ax[0].set_title("Main parameters")
+
+            ax[1].plot(R/self.R_0, T/self.T_0, label = r"$T/T_0$")
+            ax[1].invert_xaxis()
+            ax[1].legend()
+
+            ax[2].plot(R/self.R_0, P/self.P_0, label = r"$R/R_0$")
+            ax[2].plot(R/self.R_0, rho/self.rho_0, label = r"$\rho/\rho_0$")
+            ax[2].set_yscale("log")
+            ax[2].invert_xaxis()
+            ax[2].legend()
+            ax[2].set_xlabel(r"$R/R_0$")
+            #plt.savefig("main_parameters_invertx.png")
+
+        if energy_transport:
+            plt.plot(R[:-1]/self.R_0, F_con, label = r"F$_{con}$")
+            plt.plot(R[:-1]/self.R_0, F_rad, label = r"F$_{rad}$")
+            plt.legend()
+            plt.xlabel(r"$R/R_0$")
+
+
+
 #################### Sanity checks ####################
 
     def _sanity_check_opacity(self):
@@ -435,9 +445,11 @@ if __name__ == "__main__":
     #S._sanity_check_opacity()
     #S._sanity_check_gradient()
     #S._sanity_check_temperatures_gradient_plot()
-    S._convergence()
+    #S._convergence()
 
     T, M, R, L, F_con, F_rad, P, rho, nabla_stable, nabla_star, eps = S._computation()
-    cross_section(R, L, F_con, show_every = 50, sanity = False, savefig = True)
+    #cross_section(R, L, F_con, show_every = 50, sanity = False, savefig = False)
+
+    S._plotting(main_parameters = True, energy_transport = False)
 
     plt.show()
