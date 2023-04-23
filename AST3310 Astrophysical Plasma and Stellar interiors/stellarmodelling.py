@@ -62,14 +62,14 @@ class stellar_modelling:
         self.M_sun = 1.989e30               # solar mass [kg]
         self.R_sun = 6.96e8                 # solar radius [m]
 
-        # initial parameters given in task description
-        self.rho_sun = 1.408e3              # average density of the Sun [kg m^-3]
-        self.L_0 = self.L_sun               # luminosity [W]
-        self.R_0 = self.R_sun               # solar mass [kg]
-        self.M_0 = self.M_sun               # solar radius [m]
-        self.rho_0 = 1.42e-7*self.rho_sun   # density [kg m^-3]
-        self.T_0 = 5770                     # [K]
-        self.P_0 = self._P(self.rho_0, self.T_0)
+        # initial parameters
+        self.rho_sun = 1.408e3                       # average density of the Sun [kg m^-3]
+        self.L_0 = self.L_sun                        # luminosity [W]
+        self.R_0 = self.R_sun                        # solar mass [kg]
+        self.M_0 = self.M_sun                        # solar radius [m]
+        self.rho_0 = 1.42e-7*self.rho_sun            # density [kg m^-3]
+        self.T_0 = 5770                              # temperature[K]
+        self.P_0 = self._P(self.rho_0, self.T_0)    # pressure
 
         self.alpha = 1
         self.a = 4 * self.sigma / self.c        # radiation density constant
@@ -120,7 +120,8 @@ class stellar_modelling:
         #if T > self.logT[-1] or T < self.logT[0] or logR < self.logR[0] or logR > self.logR[-1]:
         #    print("Warning! Input out of bounds with table. Proceeding with extrapolation")
 
-        return 10**log_kappa * .1 # return SI units
+        kappa = 10**log_kappa * .1 # return SI units
+        return kappa
 
     def _P(self, rho, T):
         """
@@ -345,7 +346,6 @@ class stellar_modelling:
         print(f"M/M_0: {M[-1]/self.M_0*100: 4.1f} %")
         print(f"R/R_0: {R[-1]/self.R_0*100: 4.1f} %")
         print(f"L/L_0: {L[-1]/self.L_0*100: 4.1f} %")
-
 
 #################### Sanity checks ####################
 
