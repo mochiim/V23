@@ -64,11 +64,11 @@ class stellar_modelling:
 
         # initial parameters
         self.rho_sun = 1.408e3                       # average density of the Sun [kg m^-3]
-        self.L_0 = self.L_sun                        # luminosity [W]
+        self.L_0 = self.L_sun*1.2                        # luminosity [W]
         self.R_0 = self.R_sun*0.9                       # solar radius [kg]
         self.M_0 = self.M_sun                        # solar mass [m]
-        self.rho_0 = 1.42e-7*self.rho_sun*30            # density [kg m^-3]
-        self.T_0 = 5770*2                            # temperature[K]
+        self.rho_0 = 1.42e-7*self.rho_sun*29            # density [kg m^-3]
+        self.T_0 = 5770*0.5                            # temperature[K]
         self.P_0 = self._P(self.rho_0, self.T_0)    # pressure
 
         self.alpha = 1
