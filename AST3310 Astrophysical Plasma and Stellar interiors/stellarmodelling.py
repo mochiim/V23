@@ -65,10 +65,10 @@ class stellar_modelling:
         # initial parameters
         self.rho_sun = 1.408e3                       # average density of the Sun [kg m^-3]
         self.L_0 = self.L_sun                        # luminosity [W]
-        self.R_0 = self.R_sun                        # solar mass [kg]
-        self.M_0 = self.M_sun                        # solar radius [m]
-        self.rho_0 = 1.42e-7*self.rho_sun            # density [kg m^-3]
-        self.T_0 = 5770                              # temperature[K]
+        self.R_0 = self.R_sun*0.9                       # solar radius [kg]
+        self.M_0 = self.M_sun                        # solar mass [m]
+        self.rho_0 = 1.42e-7*self.rho_sun*30            # density [kg m^-3]
+        self.T_0 = 5770*2                            # temperature[K]
         self.P_0 = self._P(self.rho_0, self.T_0)    # pressure
 
         self.alpha = 1
@@ -278,7 +278,7 @@ class stellar_modelling:
             nabla_star = nabla_stable
 
         # implementing variable time step
-        f = np.abs(np.array([dr, dP, dL, dT]))
+        f = (np.array([np.abs(dr), np.abs(dP), np.abs(dL), np.abs(dT)]))
         V = np.array([r, P, L, T])
         dm = - np.min(p * V / f)
 
