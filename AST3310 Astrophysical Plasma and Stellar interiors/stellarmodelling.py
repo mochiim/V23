@@ -40,13 +40,13 @@ class stellar_modelling:
         self.R_sun = 6.96e8                 # solar radius [m]
 
         # initial parameters
-        self.rho_sun = 1.408e3                       # average density of the Sun [kg m^-3]
-        self.L_0 = self.L_sun*1.2                        # luminosity [W]
+        self.rho_sun = 1.408e3                          # average density of the Sun [kg m^-3]
+        self.L_0 = self.L_sun*1.2                       # luminosity [W]
         self.R_0 = self.R_sun*0.9                       # solar radius [kg]
-        self.M_0 = self.M_sun                        # solar mass [m]
+        self.M_0 = self.M_sun                           # solar mass [m]
         self.rho_0 = 1.42e-7*self.rho_sun*29            # density [kg m^-3]
-        self.T_0 = 5770*0.5                            # temperature[K]
-        self.P_0 = self._P(self.rho_0, self.T_0)    # pressure
+        self.T_0 = 5770*0.5                             # temperature[K]
+        self.P_0 = self._P(self.rho_0, self.T_0)        # pressure
 
         self.alpha = 1
         self.a = 4 * self.sigma / self.c        # radiation density constant
@@ -265,7 +265,9 @@ class stellar_modelling:
         L_new = L + dL * dm
         T_new = T + dT * dm
         M_new = m + dm
-        return r_new, P_new, L_new, T_new, M_new, rho, nabla_stable, nabla_star, F_con, F_rad, eps
+
+
+        return r_new, P_new, L_new, T_new, M_new, rho, nabla_stable, nabla_star, F_con, F_rad, PP1, PP2, PP3, CNO
 
     def _computation(self):
         """
@@ -284,14 +286,18 @@ class stellar_modelling:
         nabla_star = []
         F_con = []
         F_rad = []
-        eps_list =[]
+        PP1_list = []
+        PP2_list = []
+        PP3_list = []
+        CNO_list = []
+
 
         i = 0
         while radius[i] > 0 and mass[i] > 0 and luminosity[i] > 0:
             """
             While loop runs until we hit the stellar core, i.e. r = 0
             """
-            r_new, P_new, L_new, T_new, M_new, rho_new, nabla_stable_new, nabla_star_new, F_con_new, F_rad_new, eps= self._integration(mass[i], radius[i], pressure[i], luminosity[i], temperature[i])
+            r_new, P_new, L_new, T_new, M_new, rho_new, nabla_stable_new, nabla_star_new, F_con_new, F_rad_new, PP1, PP2, PP3, CNO = self._integration(mass[i], radius[i], pressure[i], luminosity[i], temperature[i])
 
             radius.append(r_new)
             pressure.append(P_new)
@@ -303,14 +309,19 @@ class stellar_modelling:
             nabla_star.append(nabla_star_new)
             F_con.append(F_con_new)
             F_rad.append(F_con_new)
-            eps_list.append(eps)
+            PP1_list.append(PP1)
+            PP2_list.append(PP2)
+            PP3_list.append(PP3)
+            CNO_list.append(CNO)
+
             i += 1
 
         return np.array(temperature), np.array(mass), np.array(radius), np.array(luminosity), np.array(F_con), np.array(F_rad),\
-               np.array(pressure), np.array(density), np.array(nabla_stable), np.array(nabla_star), np.array(eps_list)
+               np.array(pressure), np.array(density), np.array(nabla_stable), np.array(nabla_star), np.array(PP1_list), np.array(PP2_list), np.array(PP3_list), np.array(CNO_list)
 
     def _convergence(self):
-        T, M, R, L, F_con, F_rad, P, rho, nabla_stable, nabla_star, eps = self._computation()
+        """ Check to see if M, R, and L goes to 0 or within 5% of initial values """
+        T, M, R, L, F_con, F_rad, P, rho, nabla_stable, nabla_star, PP1, PP2, PP3, CNO = self._computation()
 
         # removing last element which is negativ
         T = T[:-1]
@@ -325,9 +336,17 @@ class stellar_modelling:
         print(f"L/L_0: {L[-1]/self.L_0*100: 4.1f} %")
 
 #################### Plotting ####################
-    def _plotting(self, main_parameters = False, energy_transport = False):
+    def _plotting(self, main_parameters = False, energy_transport = False, energy_production = False, nabla = False):
+        """
+        A function for plotting the following figures:
+        - main parameters
+        - energy transport: convective and radiative flux
+        - relative energy production
+        - temperature gradients
+        """
 
-        T, M, R, L, F_con, F_rad, P, rho, nabla_stable, nabla_star, eps = S._computation()
+        T, M, R, L, F_con, F_rad, P, rho, nabla_stable, nabla_star, PP1, PP2, PP3, CNO = self._computation()
+        eps = PP1 + PP2 + PP3 + CNO
 
         if main_parameters:
             fig, ax = plt.subplots(3, sharex = True, figsize = (6,5))
@@ -337,24 +356,50 @@ class stellar_modelling:
             ax[0].legend()
             ax[0].set_title("Main parameters")
 
-            ax[1].plot(R/self.R_0, T/self.T_0, label = r"$T/T_0$")
+            ax[1].plot(R/self.R_0, T, label = r"$T$")
             ax[1].invert_xaxis()
             ax[1].legend()
 
-            ax[2].plot(R/self.R_0, P/self.P_0, label = r"$R/R_0$")
+            ax[2].plot(R/self.R_0, P/self.P_0, label = r"$P/P_0$")
             ax[2].plot(R/self.R_0, rho/self.rho_0, label = r"$\rho/\rho_0$")
             ax[2].set_yscale("log")
             ax[2].invert_xaxis()
             ax[2].legend()
             ax[2].set_xlabel(r"$R/R_0$")
-            #plt.savefig("main_parameters_invertx.png")
+            plt.savefig("main_parameters_invertx_corrected1.png")
 
         if energy_transport:
-            plt.plot(R[:-1]/self.R_0, F_con, label = r"F$_{con}$")
-            plt.plot(R[:-1]/self.R_0, F_rad, label = r"F$_{rad}$")
+            plt.plot(R[:-1]/self.R_0, F_con , label = r"F$_{con}$")
+            plt.plot(R[:-1]/self.R_0, F_rad , label = r"F$_{rad}$")
             plt.legend()
             plt.xlabel(r"$R/R_0$")
 
+        if energy_production:
+            fig, ax = plt.subplots(1, sharex = True, figsize = (10, 5))
+            ax.plot(R[:-1]/self.R_0, PP1/eps, label = r"$PP1/\varepsilon$")
+            ax.plot(R[:-1]/self.R_0, PP2/eps, label = r"$PP2/\varepsilon$")
+            ax.plot(R[:-1]/self.R_0, PP3/eps, label = r"$PP3/\varepsilon$")
+            ax.plot(R[:-1]/self.R_0, CNO/eps, label = r"$CNO/\varepsilon$")
+            plt.plot(R[:-1]/self.R_0, eps/np.max(eps), label = r"$\varepsilon/\varepsilon_{max}$")
+            ax.invert_xaxis()
+            ax.set_xlabel(r"$R/R_\odot$")
+            ax.set_ylabel("Relative energy")
+            ax.set_title("Relative energy production from PP chain and CNO cycle")
+            ax.legend()
+            #plt.savefig("relative_energy_corrected1.png")
+
+        if nabla:
+            fig, ax = plt.subplots(1, figsize = (10, 5))
+            ax.plot(R[:-1]/self.R_0, nabla_stable, label = r"$\nabla_{stable}$")
+            ax.plot(R[:-1]/self.R_0, nabla_star, label = r"$\nabla^*$")
+            ax.hlines(self._nabla_ad(), 0, 1, label = r"$\nabla_{ad}$", color = "purple")
+            ax.set_yscale("log")
+            ax.set_xlabel(r"$R/R_0$")
+            ax.set_ylabel(r"$\nabla$")
+            ax.set_title("Temperature gradients")
+            ax.invert_xaxis()
+            ax.legend()
+            #plt.savefig("final_temperature_gradients_corrected1.png")
 
 
 #################### Sanity checks ####################
@@ -425,7 +470,7 @@ class stellar_modelling:
         return None
 
     def _sanity_check_temperatures_gradient_plot(self):
-        T, M, R, L, F_con, F_rad, P, rho, nabla_stable, nabla_star, eps = self._computation()
+        T, M, R, L, F_con, F_rad, P, rho, nabla_stable, nabla_star, PP1, PP2, PP3, CNO = self._computation()
         R = R[:-1]
         plt.figure(figsize = (6, 4))
         plt.plot(R/self.R_sun, nabla_stable, label = r"$\nabla_{stable}$")
@@ -442,14 +487,20 @@ class stellar_modelling:
 if __name__ == "__main__":
     S = stellar_modelling()
     S.readfile()
+
+    """Sanity checks"""
     #S._sanity_check_opacity()
     #S._sanity_check_gradient()
     #S._sanity_check_temperatures_gradient_plot()
+
+    """Convergence test"""
     #S._convergence()
 
-    T, M, R, L, F_con, F_rad, P, rho, nabla_stable, nabla_star, eps = S._computation()
+    """Cross section"""
+    #T, M, R, L, F_con, F_rad, P, rho, nabla_stable, nabla_star, PP1, PP2, PP3, CNO, eps = S._computation()
     #cross_section(R, L, F_con, show_every = 50, sanity = False, savefig = False)
 
-    S._plotting(main_parameters = True, energy_transport = False)
+    """Plotting"""
+    S._plotting(main_parameters = True, energy_transport = False, energy_production = False, nabla = False)
 
     plt.show()
