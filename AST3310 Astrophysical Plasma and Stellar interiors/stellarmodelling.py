@@ -94,8 +94,8 @@ class stellar_modelling:
         logT = np.log10(T)
         log_kappa = self.polation_opacity.ev(logT, logR)
 
-        #if T > self.logT[-1] or T < self.logT[0] or logR < self.logR[0] or logR > self.logR[-1]:
-        #    print("Warning! Input out of bounds with table. Proceeding with extrapolation")
+        if T > self.logT[-1] or T < self.logT[0] or logR < self.logR[0] or logR > self.logR[-1]:
+            print("Warning! Input out of bounds with table. Proceeding with extrapolation")
 
         kappa = 10**log_kappa * .1 # return SI units
         return kappa
@@ -366,7 +366,7 @@ class stellar_modelling:
             ax[2].invert_xaxis()
             ax[2].legend()
             ax[2].set_xlabel(r"$R/R_0$")
-            plt.savefig("main_parameters_invertx_corrected1.png")
+            #plt.savefig("main_parameters_invertx_corrected1.png")
 
         if energy_transport:
             plt.plot(R[:-1]/self.R_0, F_con , label = r"F$_{con}$")
@@ -501,6 +501,6 @@ if __name__ == "__main__":
     #cross_section(R, L, F_con, show_every = 50, sanity = False, savefig = False)
 
     """Plotting"""
-    S._plotting(main_parameters = True, energy_transport = False, energy_production = False, nabla = False)
+    S._plotting(main_parameters = False, energy_transport = False, energy_production = False, nabla = False)
 
     plt.show()
