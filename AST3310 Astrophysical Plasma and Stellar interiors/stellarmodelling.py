@@ -388,7 +388,7 @@ class stellar_modelling:
             ax.plot(R[:-1]/self.R_0, PP2/eps, label = r"$PP2/\varepsilon$")
             ax.plot(R[:-1]/self.R_0, PP3/eps, label = r"$PP3/\varepsilon$")
             ax.plot(R[:-1]/self.R_0, CNO/eps, label = r"$CNO/\varepsilon$")
-            plt.plot(R[:-1]/self.R_0, eps/np.max(eps), label = r"$\varepsilon/\varepsilon_{max}$")
+            ax.plot(R[:-1]/self.R_0, eps/np.max(eps), label = r"$\varepsilon/\varepsilon_{max}$")
             ax.invert_xaxis()
             ax.set_xlabel(r"$R/R_\odot$")
             ax.set_ylabel("Relative energy")
@@ -509,6 +509,6 @@ if __name__ == "__main__":
     #cross_section(R, L, F_con, show_every = 50, sanity = False, savefig = False)
 
     """Plotting"""
-    S._plotting(main_parameters = True, energy_transport = False, energy_production = False, nabla = False)
+    S._plotting(main_parameters = False, energy_transport = False, energy_production = True, nabla = False)
 
     plt.show()
