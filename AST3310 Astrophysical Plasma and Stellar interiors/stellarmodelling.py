@@ -232,7 +232,7 @@ class stellar_modelling:
         nabla_star = self._nabla_star(rho, T, r, m, L, kappa)
         nabla_stable = self._nabla_stable(L, T, m, rho, r, kappa)
         nabla_ad = self._nabla_ad()
-        F_con = self._F_con(rho, T, r, m, L, kappa)
+        #F_con = self._F_con(rho, T, r, m, L, kappa)
         F_rad = self._F_rad(rho, T, r, m, L, kappa)
 
         # obtaining epsilon from project 1
@@ -250,9 +250,11 @@ class stellar_modelling:
         if nabla_stable > nabla_ad:
             dT = nabla_star * T / P * dP                                       # convective and radiative transport
             nabla_star = nabla_star
+            F_con = self._F_con(rho, T, r, m, L, kappa)
         else:
             dT = - 3 * kappa * L / (256 * np.pi**2 * self.sigma * r**4 * T**3) # radiative transport only
             nabla_star = nabla_stable
+            F_con = 0
 
         # implementing variable time step
         f = (np.array([np.abs(dr), np.abs(dP), np.abs(dL), np.abs(dT)]))
@@ -308,7 +310,7 @@ class stellar_modelling:
             nabla_stable.append(nabla_stable_new)
             nabla_star.append(nabla_star_new)
             F_con.append(F_con_new)
-            F_rad.append(F_con_new)
+            F_rad.append(F_rad_new)
             PP1_list.append(PP1)
             PP2_list.append(PP2)
             PP3_list.append(PP3)
@@ -369,13 +371,18 @@ class stellar_modelling:
             #plt.savefig("main_parameters_invertx_corrected1.png")
 
         if energy_transport:
-            plt.plot(R[:-1]/self.R_0, F_con , label = r"F$_{con}$")
-            plt.plot(R[:-1]/self.R_0, F_rad , label = r"F$_{rad}$")
-            plt.legend()
-            plt.xlabel(r"$R/R_0$")
+            fig, ax = plt.subplots(1, figsize = (10, 5))
+            ax.plot(R[:-1]/self.R_0, F_con / (F_con + F_rad) , label = r"F$_{con}$")
+            ax.plot(R[:-1]/self.R_0, F_rad / (F_con + F_rad) , label = r"F$_{rad}$")
+            ax.invert_xaxis()
+            ax.legend()
+            ax.set_xlabel(r"$R/R_\odot$")
+            ax.set_ylabel(r"$F_i / (F_{con} + F_{rad})$")
+            ax.set_title(r"Fraction of energy transported by F$_{con}$ and F$_{rad}$")
+            plt.savefig("relative_flux.png")
 
         if energy_production:
-            fig, ax = plt.subplots(1, sharex = True, figsize = (10, 5))
+            fig, ax = plt.subplots(1, figsize = (10, 5))
             ax.plot(R[:-1]/self.R_0, PP1/eps, label = r"$PP1/\varepsilon$")
             ax.plot(R[:-1]/self.R_0, PP2/eps, label = r"$PP2/\varepsilon$")
             ax.plot(R[:-1]/self.R_0, PP3/eps, label = r"$PP3/\varepsilon$")
@@ -481,7 +488,7 @@ class stellar_modelling:
         plt.yscale("log")
         plt.legend()
         plt.title("Temperature gradients (for p = 0.01)")
-        plt.savefig("sanity_temperature_gradients2.png")
+        #plt.savefig("sanity_temperature_gradients2.png")
 
 
 if __name__ == "__main__":
@@ -497,10 +504,10 @@ if __name__ == "__main__":
     #S._convergence()
 
     """Cross section"""
-    #T, M, R, L, F_con, F_rad, P, rho, nabla_stable, nabla_star, PP1, PP2, PP3, CNO, eps = S._computation()
+    #T, M, R, L, F_con, F_rad, P, rho, nabla_stable, nabla_star, PP1, PP2, PP3, CNO = S._computation()
     #cross_section(R, L, F_con, show_every = 50, sanity = False, savefig = False)
 
     """Plotting"""
-    S._plotting(main_parameters = False, energy_transport = False, energy_production = False, nabla = False)
+    S._plotting(main_parameters = False, energy_transport = True, energy_production = False, nabla = False)
 
     plt.show()
