@@ -8,6 +8,7 @@ from energy_production import energy # project 1
 from cross_section import cross_section
 
 plt.style.use('ggplot')
+plt.rcParams['font.size'] = 16
 
 class stellar_modelling:
     """
@@ -118,7 +119,7 @@ class stellar_modelling:
         rho = ( (P - P_rad) * self.mu * self.m_u ) / (self.k_B * T)
         return rho
 
-####################  Temperature gradients ####################
+    """ Temperature gradients """
     def _nabla_stable(self, L, T, m, rho, r, kappa):
         """ Stable temperature gradient """
         nabla_stable = (L * 3 * kappa * rho * self._H_P(rho, T, r, m)) / (64 * np.pi * r**2 * self.sigma * T**4)
@@ -151,7 +152,7 @@ class stellar_modelling:
         nabla_p = 2 * U * 2 / r_p * xi**2 + nabla_ad
         return nabla_p
 
-####################  Flux ####################
+    """ Flux """
     def _F_rad(self, rho, T, r, m, L, kappa):
         """ Radiative flux """
         nabla_star = self._nabla_star(rho, T, r, m, L, kappa)
@@ -170,7 +171,7 @@ class stellar_modelling:
         F_con = F_tot - F_rad
         return F_con
 
-##############################################
+    """"""
 
     def _xi(self, rho, T, r, m, L, kappa):
         """ Calculating the cubic polynomial in order to express _nabla_star() """
@@ -213,7 +214,7 @@ class stellar_modelling:
         U = (64 * self.sigma * T**3) / (3 * kappa * rho**2 * c_P) * np.sqrt( H_P / g )
         return U
 
-####################  Main body ####################
+    """ Main body """
     def _integration(self, m, r, P, L, T, p = 0.01):
         """
         Euler's method to solve the four partial differential
@@ -254,7 +255,7 @@ class stellar_modelling:
         else:
             dT = - 3 * kappa * L / (256 * np.pi**2 * self.sigma * r**4 * T**3) # radiative transport only
             nabla_star = nabla_stable
-            F_con = 0
+            F_con = 0                                                          # no convective transport -> no convective flux
 
         # implementing variable time step
         f = (np.array([np.abs(dr), np.abs(dP), np.abs(dL), np.abs(dT)]))
@@ -337,7 +338,7 @@ class stellar_modelling:
         print(f"R/R_0: {R[-1]/self.R_0*100: 4.1f} %")
         print(f"L/L_0: {L[-1]/self.L_0*100: 4.1f} %")
 
-#################### Plotting ####################
+    """ Plotting """
     def _plotting(self, main_parameters = False, energy_transport = False, energy_production = False, nabla = False):
         """
         A function for plotting the following figures:
@@ -378,8 +379,8 @@ class stellar_modelling:
             ax.legend()
             ax.set_xlabel(r"$R/R_\odot$")
             ax.set_ylabel(r"$F_i / (F_{con} + F_{rad})$")
-            ax.set_title(r"Fraction of energy transported by F$_{con}$ and F$_{rad}$")
-            plt.savefig("relative_flux.png")
+            ax.set_title(r"Relative energy transport")
+            #plt.savefig("relative_flux_corrected.png")
 
         if energy_production:
             fig, ax = plt.subplots(1, figsize = (10, 5))
@@ -409,7 +410,7 @@ class stellar_modelling:
             #plt.savefig("final_temperature_gradients_corrected1.png")
 
 
-#################### Sanity checks ####################
+    """ Sanity checks """
 
     def _sanity_check_opacity(self):
         """
@@ -508,6 +509,6 @@ if __name__ == "__main__":
     #cross_section(R, L, F_con, show_every = 50, sanity = False, savefig = False)
 
     """Plotting"""
-    S._plotting(main_parameters = False, energy_transport = True, energy_production = False, nabla = False)
+    S._plotting(main_parameters = True, energy_transport = False, energy_production = False, nabla = False)
 
     plt.show()
