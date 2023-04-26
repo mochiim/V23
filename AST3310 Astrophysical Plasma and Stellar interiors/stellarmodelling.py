@@ -50,9 +50,8 @@ class stellar_modelling:
         self.P_0 = self._P(self.rho_0, self.T_0)        # pressure
 
         self.alpha = 1
-        self.a = 4 * self.sigma / self.c        # radiation density constant
-        self.c_P = 5/2 * self.k_B / (self.mu * self.m_u)
-        self.eV = sc.eV     # [J]
+        self.a = 4 * self.sigma / self.c                # radiation density constant
+        self.c_P = 5/2 * self.k_B / (self.mu * self.m_u)# specific heat capacity
 
     def readfile(self):
         """
@@ -392,9 +391,9 @@ class stellar_modelling:
             ax.invert_xaxis()
             ax.set_xlabel(r"$R/R_\odot$")
             ax.set_ylabel("Relative energy")
-            ax.set_title("Relative energy production from PP chain and CNO cycle")
+            ax.set_title("Relative energy production")
             ax.legend()
-            #plt.savefig("relative_energy_corrected1.png")
+            #plt.savefig("relative_energy.png")
 
         if nabla:
             fig, ax = plt.subplots(1, figsize = (10, 5))
@@ -407,7 +406,7 @@ class stellar_modelling:
             ax.set_title("Temperature gradients")
             ax.invert_xaxis()
             ax.legend()
-            #plt.savefig("final_temperature_gradients_corrected1.png")
+            #plt.savefig("tempgrad.png")
 
 
     """ Sanity checks """
@@ -509,6 +508,6 @@ if __name__ == "__main__":
     #cross_section(R, L, F_con, show_every = 50, sanity = False, savefig = False)
 
     """Plotting"""
-    S._plotting(main_parameters = False, energy_transport = False, energy_production = True, nabla = False)
+    S._plotting(main_parameters = False, energy_transport = False, energy_production = False, nabla = False)
 
     plt.show()
