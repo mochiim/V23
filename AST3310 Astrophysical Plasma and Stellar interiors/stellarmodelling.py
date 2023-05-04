@@ -246,7 +246,7 @@ class stellar_modelling:
         dP = - (self.G * m) / (4 * np.pi * r**4)
         dL = eps
 
-        # convetive instability check to determine dT
+        # convetive instability check
         if nabla_stable > nabla_ad:
             dT = nabla_star * T / P * dP                                       # convective and radiative transport
             nabla_star = nabla_star
