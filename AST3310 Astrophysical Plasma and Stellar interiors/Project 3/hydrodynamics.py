@@ -209,4 +209,4 @@ if __name__ == '__main__':
     test = Hydrodynamics()
     test.initialise()
     vis = FVis.FluidVisualiser()
-    vis.animate_2D("T", save = False, folder = "FVis_output_test")
+   
