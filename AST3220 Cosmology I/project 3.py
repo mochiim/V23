@@ -14,13 +14,8 @@ phi_init = E_P * np.sqrt((e_folds + 1/2 ) / (2*np.pi))    # initial value for sc
 print(f"Initial value for the field that will give 500 e-folds of inflation is ", "{:e}".format(phi_init))
 
 """ Task e"""
-psi_init = phi_init / E_P
+psi = lampbda psi: phi / E_P
 v = lambda psi: (3 * hbar * c ** 5) / (8 * np.pi * G) * (psi / phi_init) ** 2
-dv_dpsi = 
-
-def task_e(n = 1000):
-    psi = np.zeros(n)
-    h = np.zeros(n)
     
 
 
