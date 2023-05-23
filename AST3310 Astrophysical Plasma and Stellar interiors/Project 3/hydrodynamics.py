@@ -40,7 +40,7 @@ class Hydrodynamics:
         self.u = np.zeros([self.Nx, self.Ny])       # horizontal velocity
         self.w = np.zeros([self.Nx, self.Ny])       # vertical velocity
         self.e = np.zeros([self.Nx, self.Ny])       # internal energy
-
+        self.dt = 0
     def initialise(self, Gauss = False):
 
         """
@@ -67,34 +67,39 @@ class Hydrodynamics:
         e = self.e
 
         # continuity equation
-        self.rho_dt  = - rho * (self._central_x(u) + self._central_y(w)) - u * self._upwind_x(rho, u) - w * self._upwind_y(rho, w)
+        self.rho_dt  = - rho * (self.central_x(u) + self.central_y(w)) - u * self.upwind_x(rho, u) - w * self.upwind_y(rho, w)
 
         # horizontal component of momentum equation
-        self.drhou_dt = rho * u * (self._upwind_x(u, u) + self._upwind_y(w, u)) - u * self._upwind_x(rho * u, u) - w * self._upwind_y(rho * u, w) - self._central_x(P)
+        self.drhou_dt = rho * u * (self.upwind_x(u, u) + self.upwind_y(w, u)) - u * self.upwind_x(rho * u, u) - w * self.upwind_y(rho * u, w) - self.central_x(P)
 
         # vertical component of momentum equation
-        self.drhow_dt = rho * w * (self._upwind_y(w, w) + self._upwind_x(u, w)) - w * self._upwind_y(rho * w, w) - u * self._upwind_x(rho * w, u) - self._central_y(P) + rho * self.g
+        self.drhow_dt = rho * w * (self.upwind_y(w, w) + self.upwind_x(u, w)) - w * self.upwind_y(rho * w, w) - u * self.upwind_x(rho * w, u) - self.central_y(P) + rho * self.g
 
         # energy equation
-        self.de_dt = - e * (self._central_x(u) + self._central_y(w)) - u * self._upwind_x(e, u) - w * self._upwind_y(e, w) - P * (self._central_x(u) + self._central_y(w))
+        self.de_dt = - e * (self.central_x(u) + self.central_y(w)) - u * self.upwind_x(e, u) - w * self.upwind_y(e, w) - P * (self.central_x(u) + self.central_y(w))
+        
 
         # compute relative change for different variables
-        rel_rho = max(abs( self.rho_dt / rho ))
-        rel_rhou = max(abs( self.drhou_dt / (rho * u * self.masked_where(u != 0, self.u).mask) ))
-        rel_rhow = max(abs( self.drhow_dt /  (rho * w * self.masked_where(w != 0, w).mask) ))
-        rel_x = max(abs( u / self.dx ))
-        rel_y = max(abs( w / self.dy ))
-        rel_e = max(abs( self.de_dt / e ))
+        rel_rho = np.abs( self.rho_dt / rho )
+        rel_rhou = np.abs( self.drhou_dt / (rho * u * ma.masked_where(u != 0, u)) )
+        rel_rhow = np.abs( self.drhow_dt /  (rho * w * ma.masked_where(w != 0, w)) )
+        rel_x = np.abs( u / self.dx )
+        rel_y = np.abs( w / self.dy )
+        rel_e = np.abs( self.de_dt / e )
 
-        d = max([rel_rho, rel_rhou, rel_rhow, rel_x, rel_y, rel_e])
+        d = max([np.max(rel_rho), np.max(rel_rhou), np.max(rel_rhow), np.max(rel_x), np.max(rel_y), np.max(rel_e)])
 
         if d == 0:
             d = 1
+
             self.dt = p / d
         
         if d < 0.01:
             d = 0.01
+
             self.dt = p / d
+        
+        return self.dt
 
     def boundary_conditions(self):
 
@@ -106,12 +111,12 @@ class Hydrodynamics:
         self.w[:-1] = 0
 
         # vertical boundary: horizontal velocity
-        self.u[:0] = (- self.u[:2] + 4*self.u[:1]) / 3
-        self.u[:-1] = (- self.u[:-2] + 4 * self.u[:-1]) / 3
+        self.u[:, 0] = ( - self.u[:, 2] + 4 * self.u[:, 1] ) / 3
+        self.u[:, -1] = ( - self.u[:, -2] + 4 * self.u[:, -1] ) / 3
 
         # vertical boundary: internal energy
-        self.e[:, 0]    = ( - self.e[:, 2] + 4 * self.e[:, 1] ) / ( 3 - 2 * self.mu * self.m_u * self.g / ( self.k * self.T[:, 0] ) * self.Dy )
-        self.e[:, -1]   = ( - self.e[:, -3] + 4 * self.e[:, -2] ) / ( 3 + 2 * self.mu * self.m_u * self.g / ( self.k * self.T[:, -1] ) * self.Dy )
+        self.e[:, 0]    = ( - self.e[:, 2] + 4 * self.e[:, 1] ) / ( 3 - 2 * self.mu * self.m_u * self.g / ( self.k * self.T[:, 0] ) * self.dy )
+        self.e[:, -1]   = ( - self.e[:, -3] + 4 * self.e[:, -2] ) / ( 3 + 2 * self.mu * self.m_u * self.g / ( self.k * self.T[:, -1] ) * self.dy )
         
         # vertical boundary: density
         self.rho[:, 0]  = self.e[:, 0] * 2 / 3 * self.mu * self.m_u / (self.k * self.T[:, 0])
@@ -194,9 +199,9 @@ class Hydrodynamics:
         self.timestep()
 
         self.rho[:] = self.rho + self.rho_dt + self.dt
-        self.u[:] = (self.rho * self.u + self.rhou_dt * self.dt) / self.rho
-        self.w[:] = (self.rho * self.w + self.rhow_dt * self.dt) / self.rho
-        self.e[:] = e + self.e_dt * self.dt
+        self.u[:] = (self.rho * self.u + self.drhou_dt * self.dt) / self.rho
+        self.w[:] = (self.rho * self.w + self.drhow_dt * self.dt) / self.rho
+        self.e[:] = self.e + self.de_dt * self.dt
 
         self.boundary_conditions()
 
@@ -209,4 +214,10 @@ if __name__ == '__main__':
     test = Hydrodynamics()
     test.initialise()
     vis = FVis.FluidVisualiser()
+    test.hydro_solver()
+
+    #vis.save_data(200, test.hydro_solver, rho = test.rho, u = test.u, w = test.w, e = test.e, P = test.P, T = test.T)
+    # Folder: FVis_output_2023-05-23_09-57 
+
+    #vis.animate_2D("T", folder = "FVis_output_2023-05-23_09-57")
    
