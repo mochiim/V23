@@ -21,10 +21,10 @@ class Hydrodynamics:
         self.xaxis = 12e6               # width of box (horizontal) [m]
         self.Ny = 100                   # number of boxes in vertical direction
         self.Nx = 300                   # number of boxes in horizontal direction
-        self.dx = self.xaxis/self.Nx    #  
+        self.dx = self.xaxis/self.Nx    #
         self.dy = self.yaxis/self.Ny    #
         self.mu = .61                   # mean mulecular weight
-        
+
         # solar attributes
         self.T_sun = 5778                            # temperature of photosphere [K]
         self.P_sun = 1.8e4                           # pressure of photosphere [Pa]
@@ -34,13 +34,14 @@ class Hydrodynamics:
         self.g = - self.G*self.M_sun/self.R_sun**2   # constant gravitational acceleration in negative y-direction
 
         # arrays to store computed values
-        self.T = np.zeros([self.Nx, self.Ny])       # temperature
-        self.P = np.zeros([self.Nx, self.Ny])       # pressure
-        self.rho = np.zeros([self.Nx, self.Ny])     # density
-        self.u = np.zeros([self.Nx, self.Ny])       # horizontal velocity
-        self.w = np.zeros([self.Nx, self.Ny])       # vertical velocity
-        self.e = np.zeros([self.Nx, self.Ny])       # internal energy
+        self.T = np.zeros([self.Ny, self.Nx])       # temperature
+        self.P = np.zeros([self.Ny, self.Nx])       # pressure
+        self.rho = np.zeros([self.Ny, self.Nx])     # density
+        self.u = np.zeros([self.Ny, self.Nx])       # horizontal velocity
+        self.w = np.zeros([self.Ny, self.Nx])       # vertical velocity
+        self.e = np.zeros([self.Ny, self.Nx])       # internal energy
         self.dt = 0
+
     def initialise(self, Gauss = False):
 
         """
@@ -48,11 +49,25 @@ class Hydrodynamics:
         """
         nabla = 2.5 + .01
 
-        self.T[:] = self.T_sun - self.mu * self.m_u * self.g * nabla * self.dy / self.k
-        self.P[:] = self.P_sun * (self.T / self.T_sun) ** (1 / nabla)
-        self.e[:] = 3/2 * self.P
-        self.rho[:] = self.P * self.mu * self.m_u / ( self.k * self.T)
-        self.u[:] = 0
+        self.T[-1, :] = self.T_sun
+        self.P[-1, :] = self.P_sun
+        self.e[-1, :] = 3/2 * self.P_sun
+        self.rho[-1, :] = 2/3 * 3/2 * self.P_sun * self.mu * self.m_u / (self.k * self.T_sun)
+
+        if Gauss:
+            self.gauss = 0
+        else:
+            self.gauss = 0
+
+        for i in range(self.Ny - 1, 0, -1):
+            dM = 4 * np.pi * self.R_sun ** 2 * self.rho[i, :]
+            dP = - self.g * self.rho[i, :]
+            dT = nabla * self.T[i, :] / self.P[i, :] * dP
+
+            self.T[i - 1, :] = self.T[i, :] - dT * self.dy + self.gauss
+            self.P[i - 1, :] = self.P[i, :] - dP * self.dy
+            self.e[i - 1, :] = 2 / 3 * self.P[i - 1, :]
+            self.rho[i - 1, :] = 2 * self.e[i-1, :] / 3 * self.mu * self.m_u / (self.k * self.T[i-1, :])
 
     def timestep(self):
 
@@ -77,7 +92,7 @@ class Hydrodynamics:
 
         # energy equation
         self.de_dt = - e * (self.central_x(u) + self.central_y(w)) - u * self.upwind_x(e, u) - w * self.upwind_y(e, w) - P * (self.central_x(u) + self.central_y(w))
-        
+
 
         # compute relative change for different variables
         rel_rho = np.abs( self.rho_dt / rho )
@@ -93,12 +108,12 @@ class Hydrodynamics:
             d = 1
 
             self.dt = p / d
-        
+
         if d < 0.01:
             d = 0.01
 
             self.dt = p / d
-        
+
         return self.dt
 
     def boundary_conditions(self):
@@ -111,16 +126,16 @@ class Hydrodynamics:
         self.w[:-1] = 0
 
         # vertical boundary: horizontal velocity
-        self.u[:, 0] = ( - self.u[:, 2] + 4 * self.u[:, 1] ) / 3
-        self.u[:, -1] = ( - self.u[:, -2] + 4 * self.u[:, -1] ) / 3
+        self.u[0, :] = ( - self.u[2, :] + 4 * self.u[1, :] ) / 3
+        self.u[-1, :] = ( - self.u[-2, :] + 4 * self.u[-1, :] ) / 3
 
         # vertical boundary: internal energy
-        self.e[:, 0]    = ( - self.e[:, 2] + 4 * self.e[:, 1] ) / ( 3 - 2 * self.mu * self.m_u * self.g / ( self.k * self.T[:, 0] ) * self.dy )
-        self.e[:, -1]   = ( - self.e[:, -3] + 4 * self.e[:, -2] ) / ( 3 + 2 * self.mu * self.m_u * self.g / ( self.k * self.T[:, -1] ) * self.dy )
-        
+        self.e[0, :]    = ( - self.e[2, :] + 4 * self.e[1, :] ) / ( 3 - 2 * self.mu * self.m_u * self.g / ( self.k * self.T[0, :] ) * self.dy )
+        self.e[-1, :]   = ( - self.e[-3, :] + 4 * self.e[-2, :] ) / ( 3 + 2 * self.mu * self.m_u * self.g / ( self.k * self.T[-1, :] ) * self.dy )
+
         # vertical boundary: density
-        self.rho[:, 0]  = self.e[:, 0] * 2 / 3 * self.mu * self.m_u / (self.k * self.T[:, 0])
-        self.rho[:, -1] = self.e[:, -1] * 2 / 3 * self.mu * self.m_u / (self.k * self.T[:, -1])
+        self.rho[0, :]  = self.e[0, :] * 2 / 3 * self.mu * self.m_u / (self.k * self.T[0, :])
+        self.rho[-1, :] = self.e[-1, :] * 2 / 3 * self.mu * self.m_u / (self.k * self.T[-1, :])
 
     def central_x(self, var):
 
@@ -128,8 +143,8 @@ class Hydrodynamics:
         central difference scheme in x-direction
         """
         phi = var
-        phi_before = np.roll(phi, -1, axis = 0)
-        phi_after = np.roll(phi, 1, axis = 0)
+        phi_before = np.roll(phi, -1, axis = 1)
+        phi_after = np.roll(phi, 1, axis = 1)
 
         dphi = phi_after - phi_before / (2 * self.dx)
 
@@ -141,8 +156,8 @@ class Hydrodynamics:
         central difference scheme in y-direction
         """
         phi = var
-        phi_before = np.roll(phi, -1, axis = 1)
-        phi_after = np.roll(phi, 1, axis = 1)
+        phi_before = np.roll(phi, -1, axis = 0)
+        phi_after = np.roll(phi, 1, axis = 0)
 
         dphi = phi_after - phi_before / (2 * self.dy)
 
@@ -155,9 +170,9 @@ class Hydrodynamics:
         """
         phi = var
         u = vel
-        
-        phi_before = np.roll(phi, -1, axis = 0)
-        phi_after = np.roll(phi, 1, axis = 0)
+
+        phi_before = np.roll(phi, -1, axis = 1)
+        phi_after = np.roll(phi, 1, axis = 1)
 
         # u >= 0
         pos_u = ma.masked_greater_equal(u, 0).mask * (phi - phi_before) / self.dx
@@ -168,7 +183,7 @@ class Hydrodynamics:
         dphi = pos_u + neg_u
 
         return dphi
-        
+
     def upwind_y(self, var, vel):
 
         """
@@ -177,8 +192,8 @@ class Hydrodynamics:
         phi = var
         w = vel
 
-        phi_before = np.roll(phi, -1, axis = 1)
-        phi_after = np.roll(phi, 1, axis = 1)
+        phi_before = np.roll(phi, -1, axis = 0)
+        phi_after = np.roll(phi, 1, axis = 0)
 
         # w >= 0
         pos_w = ma.masked_greater_equal(w, 0).mask * (phi - phi_before) / self.dy
@@ -217,7 +232,9 @@ if __name__ == '__main__':
     test.hydro_solver()
 
     #vis.save_data(200, test.hydro_solver, rho = test.rho, u = test.u, w = test.w, e = test.e, P = test.P, T = test.T)
-    # Folder: FVis_output_2023-05-23_09-57 
+    # Folder: FVis_output_2023-05-23_09-57, first run
+    # Folder: FVis_output_2023-05-25_10-54, flipped orientation
+    # Folder: FVis_output_2023-05-25_19-12, rewritten initialise()
+    # Folder: FVis_output_2023-05-25_19-27, test of perturbation
 
-    #vis.animate_2D("T", folder = "FVis_output_2023-05-23_09-57")
-   
+    vis.animate_2D("T", folder = "FVis_output_2023-05-25_19-27")
