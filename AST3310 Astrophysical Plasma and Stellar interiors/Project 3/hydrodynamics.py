@@ -131,8 +131,8 @@ class Hydrodynamics:
         boundary conditions for energy, density and velocity
         """
         # vertical boundary: vertical velocity
-        self.w[:0] = 0
-        self.w[:-1] = 0
+        self.w[0:] = 0
+        self.w[-1:] = 0
 
         # vertical boundary: horizontal velocity
         self.u[0, :] = ( - self.u[2, :] + 4 * self.u[1, :] ) / 3
@@ -242,8 +242,6 @@ if __name__ == '__main__':
 
     #vis.save_data(200, test.hydro_solver, rho = test.rho, u = test.u, w = test.w, e = test.e, P = test.P, T = test.T)
     # Folder: FVis_output_2023-05-23_09-57, first run
-    # Folder: FVis_output_2023-05-25_10-54, flipped orientation
-    # Folder: FVis_output_2023-05-25_19-12, rewritten initialise()
-    # Folder: FVis_output_2023-05-26_11-04, test of perturbation
+   
 
-    vis.animate_2D("T", folder = "FVis_output_2023-05-26_11-04")
+    #vis.animate_2D("T", folder = "FVis_output_2023-05-26_11-04")
