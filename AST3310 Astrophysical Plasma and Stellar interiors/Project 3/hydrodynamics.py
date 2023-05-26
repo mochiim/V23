@@ -236,7 +236,7 @@ class Hydrodynamics:
 
 if __name__ == '__main__':
     test = Hydrodynamics()
-    test.initialise(Gauss = True)
+    test.initialise(Gauss = False)
     vis = FVis.FluidVisualiser()
     test.hydro_solver()
 
@@ -244,6 +244,6 @@ if __name__ == '__main__':
     # Folder: FVis_output_2023-05-23_09-57, first run
     # Folder: FVis_output_2023-05-25_10-54, flipped orientation
     # Folder: FVis_output_2023-05-25_19-12, rewritten initialise()
-    # Folder: FVis_output_2023-05-26_11-03, test of perturbation
+    # Folder: FVis_output_2023-05-26_11-04, test of perturbation
 
-    #vis.animate_2D("T", folder = "FVis_output_2023-05-25_19-27")
+    vis.animate_2D("T", folder = "FVis_output_2023-05-26_11-04")
