@@ -40,7 +40,7 @@ class Hydrodynamics:
         self.u = np.zeros([self.Ny, self.Nx])       # horizontal velocity
         self.w = np.zeros([self.Ny, self.Nx])       # vertical velocity
         self.e = np.zeros([self.Ny, self.Nx])       # internal energy
-        self.dt = 0
+        self.gauss = np.zeros([self.Ny, self.Nx])   # gaussian distribution
 
     def initialise(self, Gauss = False):
 
@@ -55,16 +55,25 @@ class Hydrodynamics:
         self.rho[-1, :] = 2/3 * 3/2 * self.P_sun * self.mu * self.m_u / (self.k * self.T_sun)
 
         if Gauss:
-            self.gauss = 0
+            for i in range(self.Ny - 1):
+                for j in range(self.Nx - 1):
+                    y, x = i, j
+                    A = .1 * self.T_sun
+                    mean_x = 150; mean_y = 80
+                    sigma = 20
+                    gauss = A * np.exp( (-.5 * ((x - mean_x) / sigma) ** 2) + (.5 * ((y - mean_y) / sigma)) **2 )
+                    self.gauss[i, j] = gauss
+            print("Gaussian perturbation: on")
+
         else:
-            self.gauss = 0
+            print("Gaussian perturbation: off")
 
         for i in range(self.Ny - 1, 0, -1):
             dM = 4 * np.pi * self.R_sun ** 2 * self.rho[i, :]
             dP = - self.g * self.rho[i, :]
             dT = nabla * self.T[i, :] / self.P[i, :] * dP
 
-            self.T[i - 1, :] = self.T[i, :] - dT * self.dy + self.gauss
+            self.T[i - 1, :] = self.T[i, :] - dT * self.dy + self.gauss[i, :]
             self.P[i - 1, :] = self.P[i, :] - dP * self.dy
             self.e[i - 1, :] = 2 / 3 * self.P[i - 1, :]
             self.rho[i - 1, :] = 2 * self.e[i-1, :] / 3 * self.mu * self.m_u / (self.k * self.T[i-1, :])
@@ -227,7 +236,7 @@ class Hydrodynamics:
 
 if __name__ == '__main__':
     test = Hydrodynamics()
-    test.initialise()
+    test.initialise(Gauss = True)
     vis = FVis.FluidVisualiser()
     test.hydro_solver()
 
@@ -235,6 +244,6 @@ if __name__ == '__main__':
     # Folder: FVis_output_2023-05-23_09-57, first run
     # Folder: FVis_output_2023-05-25_10-54, flipped orientation
     # Folder: FVis_output_2023-05-25_19-12, rewritten initialise()
-    # Folder: FVis_output_2023-05-25_19-27, test of perturbation
+    # Folder: FVis_output_2023-05-26_11-03, test of perturbation
 
-    vis.animate_2D("T", folder = "FVis_output_2023-05-25_19-27")
+    #vis.animate_2D("T", folder = "FVis_output_2023-05-25_19-27")
