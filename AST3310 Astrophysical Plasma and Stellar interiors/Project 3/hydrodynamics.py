@@ -49,11 +49,7 @@ class Hydrodynamics:
         """
         nabla = 2.5 + .01
 
-        self.T[-1, :] = self.T_sun
-        self.P[-1, :] = self.P_sun
-        self.e[-1, :] = 3/2 * self.P_sun
-        self.rho[-1, :] = 2/3 * 3/2 * self.P_sun * self.mu * self.m_u / (self.k * self.T_sun)
-
+        # 2D Gaussian which is added to initial temperature if turned on
         if Gauss:
             for i in range(self.Ny - 1):
                 for j in range(self.Nx - 1):
@@ -68,6 +64,13 @@ class Hydrodynamics:
         else:
             print("Gaussian perturbation: off")
 
+        # initial values for temperature and pressure is given in lecture notes
+        self.T[-1, :] = self.T_sun + self.gauss[-1, 0] 
+        self.P[-1, :] = self.P_sun
+        # internal energy and density is calculated from eos for an ideal gas
+        self.e[-1, :] = 3/2 * self.P_sun 
+        self.rho[-1, :] = 2/3 * self.P_sun * self.mu * self.m_u / (self.k * self.T_sun)
+
         for i in range(self.Ny - 1, 0, -1):
             dM = 4 * np.pi * self.R_sun ** 2 * self.rho[i, :]
             dP = - self.g * self.rho[i, :]
@@ -75,8 +78,8 @@ class Hydrodynamics:
 
             self.T[i - 1, :] = self.T[i, :] - dT * self.dy + self.gauss[i, :]
             self.P[i - 1, :] = self.P[i, :] - dP * self.dy
-            self.e[i - 1, :] = 2 / 3 * self.P[i - 1, :]
-            self.rho[i - 1, :] = 2 * self.e[i-1, :] / 3 * self.mu * self.m_u / (self.k * self.T[i-1, :])
+            self.e[i - 1, :] = 3 / 2 * self.P[i - 1, :]
+            self.rho[i - 1, :] = 2/3 * self.e[i-1, :] * self.mu * self.m_u / (self.k * self.T[i-1, :])
 
     def timestep(self):
 
@@ -103,7 +106,7 @@ class Hydrodynamics:
         self.de_dt = - e * (self.central_x(u) + self.central_y(w)) - u * self.upwind_x(e, u) - w * self.upwind_y(e, w) - P * (self.central_x(u) + self.central_y(w))
 
 
-        # compute relative change for different variables
+        # compute relative change for different variables, making sure avoid division by 0
         rel_rho = np.abs( self.rho_dt / rho )
         rel_rhou = np.abs( self.drhou_dt / (rho * u * ma.masked_where(u != 0, u)) )
         rel_rhow = np.abs( self.drhow_dt /  (rho * w * ma.masked_where(w != 0, w)) )
@@ -113,11 +116,12 @@ class Hydrodynamics:
 
         d = max([np.max(rel_rho), np.max(rel_rhou), np.max(rel_rhow), np.max(rel_x), np.max(rel_y), np.max(rel_e)])
 
+        # in case all relative values are 0
         if d == 0:
             d = 1
-
             self.dt = p / d
 
+        # avoiding too small time steps
         if d < 0.01:
             d = 0.01
 
@@ -131,8 +135,8 @@ class Hydrodynamics:
         boundary conditions for energy, density and velocity
         """
         # vertical boundary: vertical velocity
-        self.w[0:] = 0
-        self.w[-1:] = 0
+        self.w[0, :] = 0
+        self.w[-1, :] = 0
 
         # vertical boundary: horizontal velocity
         self.u[0, :] = ( - self.u[2, :] + 4 * self.u[1, :] ) / 3
@@ -181,7 +185,7 @@ class Hydrodynamics:
         u = vel
 
         phi_before = np.roll(phi, -1, axis = 1)
-        phi_after = np.roll(phi, 1, axis = 1)
+        phi_after = np.roll(phi, 1, axis = -1)
 
         # u >= 0
         pos_u = ma.masked_greater_equal(u, 0).mask * (phi - phi_before) / self.dx
@@ -235,13 +239,13 @@ class Hydrodynamics:
         return self.dt
 
 if __name__ == '__main__':
+    vis = FVis.FluidVisualiser()
     test = Hydrodynamics()
     test.initialise(Gauss = False)
-    vis = FVis.FluidVisualiser()
     test.hydro_solver()
 
     #vis.save_data(200, test.hydro_solver, rho = test.rho, u = test.u, w = test.w, e = test.e, P = test.P, T = test.T)
-    # Folder: FVis_output_2023-05-23_09-57, first run
-   
+    # Folder: FVis_output_2023-05-28_13-16
 
-    #vis.animate_2D("T", folder = "FVis_output_2023-05-26_11-04")
+    #vis.animate_2D("T", folder = "FVis_output_2023-05-28_13-16")
+    
