@@ -7,7 +7,8 @@ from matplotlib.cbook import get_sample_data
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
 #Plotting the Earth and Mars orbits
-alpha = 44 #degrees (Angle by which should be ahead by)
+alpha_input = input("Tast inn utskytningsvinkel: ")
+alpha = float(alpha_input) #degrees (Angle by which should be ahead by)
 Earth = plt.Circle((0,0), radius= 1.0,fill=False,color='blue')
 Mars = plt.Circle((0,0), radius= 1.52,fill=False,color='brown')
 
