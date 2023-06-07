@@ -1,5 +1,3 @@
-# brew install ffmpeg
-
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import animation
@@ -75,12 +73,10 @@ fig, ax = plt.subplots(figsize=(10,8))
 fig.subplots_adjust(left=.15, bottom=.16, right=.99, top=.97)
 
 ax.plot(0,0,color='orange',marker='o',linestyle='',markersize=16,markerfacecolor='yellow',label='Sun')
-sun = AnnotationBbox(getImage('/Users/rebeccanguyen/Documents/GitHub/V23/Oppdrag mars/Sun.png'), (0, 0), frameon=False)
-ax.add_artist(sun)
+#sun = AnnotationBbox(getImage('/Users/rebeccanguyen/Documents/GitHub/V23/Oppdrag mars/Sun.png'), (0, 0), frameon=False)
+#ax.add_artist(sun)
 
 ax.plot([],[],color='blue',linestyle='',marker='o',label='Earth')
-earth_im = plt.imread("/Users/rebeccanguyen/Documents/GitHub/V23/Oppdrag mars/Earth.png")
-#im = ax.imshow(earth_im, zorder=10, aspect=.2)
 
 ax.plot([],[],color='brown',linestyle='',marker='o',label='Mars')
 ax.plot([],[],color='red',linestyle='',marker='o',label='spacecraft')
@@ -95,6 +91,4 @@ ax.set_ylabel('Y [AU]',fontsize=12)
 ax.legend(loc='best',fontsize=12)
 anim = animation.FuncAnimation(fig, animate,init_func=init,frames=260,interval=40,blit=True)
 plt.axis('scaled') #Scale the plot in real time
-#plt.savefig(‘Hohmann.pdf’)
-#anim.save('Hohmann.mp4', writer=writer)
 plt.show()
