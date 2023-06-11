@@ -121,6 +121,8 @@ def _taskg(plot = False, save = False):
     if save:
         plt.savefig("task_g.png")
 
+    return N_tot
+
 """ Task i """
 def _taski(plot = False, save = False):
     h, tau, psi, dpsi, ln_a_ai, p_rho_c = _solver()
@@ -135,13 +137,30 @@ def _taski(plot = False, save = False):
     if save: 
         plt.savefig("task_i.png")
 
-
+""" Task j"""
+def _taskj(plot = False, save = False):
+    h, tau, psi, dpsi, ln_a_ai, p_rho_c = _solver()
+    phi = psi * E_P
+    N_tot = _taskg(plot = False, save = False)
+    epsilon = _epsilon(phi)
+    idx = epsilon <= 1
+    N_left = N_tot - ln_a_ai[idx]
+    
+    if plot:
+        plt.figure(figsize = (6, 6))
+        plt.plot(N_left, epsilon[idx], color = "black")
+        plt.xscale("log")
+        plt.xlabel("N"); plt.ylabel(r"$\epsilon$")
+    
+    if save:
+        plt.savefig("task_j.png")
 
 if __name__ == "__main__":
-    _taske(plot = False, save = False)
-    _taskf(plot = False, save = False)
-    _taskg(plot = False, save = False)
-    _taski(plot = True, save = True)
+    #_taske(plot = False, save = False)
+    #_taskf(plot = False, save = False)
+    #_taskg(plot = False, save = False)
+    #_taski(plot = False, save = False)
+    _taskj(plot = True, save = True)
     plt.show()
  
     
