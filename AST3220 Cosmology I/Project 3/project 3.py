@@ -19,11 +19,15 @@ _dv_dpsi = lambda psi: 3 * hbar * c ** 5 / (4 * np.pi * G) * psi / phi_init ** 2
 _v = lambda psi: 3/(8*np.pi) * (psi / _psi(phi_init))**2
 
 def _solver(n = int(1e5)):
+    """
+    
+    """
     # empty arrays for storing calculated values
     h = np.zeros(n)
     psi = np.zeros(n)
     dpsi = np.zeros(n)
     ln_a_ai = np.zeros(n)
+    p_rho_c = np.zeros(n)
 
     # defining steplength and time interval
     tau_end = int(1e4) # arbitrary value
@@ -31,26 +35,24 @@ def _solver(n = int(1e5)):
     tau = np.linspace(0, tau_end, n)
 
     # initial conditions
-    h[0] = 1
-    psi[0] = _psi(phi_init)
-    dpsi[0] = 0
-    ln_a_ai[0] = 0
+    h[0] = 1 # dimensionless Hubble parameter
+    psi[0] = _psi(phi_init) # scalar field
+    dpsi[0] = 0 # derivative of scalar field
+    ln_a_ai[0] = 0 # logarithm of scale factor
+    p_rho_c[0] = (.5 * dpsi[0] ** 2 - _v(psi[0])) / (.5 * dpsi[0] ** 2 + _v(psi[0])) # ratio between p and ρc^2
 
     for i in range(n - 1):
         d2psi = - 3 * h[i] * dpsi[i] - _dv_dpsi(psi[i]) # double derivative of scalar field
-
         dpsi[i+1] = dpsi[i] + d2psi * dtau
-
         psi[i+1] = psi[i] + dpsi[i] * dtau
-
         h[i+1] = np.sqrt( np.abs( 8 * np.pi / 3 * (0.5 * dpsi[i + 1] ** 2 + _v(psi[i + 1])) ))
-
         ln_a_ai[i + 1] = ln_a_ai[i] + h[i] * dtau
+        p_rho_c[i + 1] = (.5 * dpsi[i + 1] ** 2 - _v(psi[i + 1])) / (.5 * dpsi[i + 1] ** 2 + _v(psi[i + 1]))
 
-    return h, tau, psi, dpsi, ln_a_ai
+    return h, tau, psi, dpsi, ln_a_ai, p_rho_c
 
 def _taske(plot = False, save = False):
-    h, tau, psi, dpsi, ln_a_ai = _solver()
+    h, tau, psi, dpsi, ln_a_ai, p_rho_c = _solver()
 
     if plot:
         fig, ax = plt.subplots(2, sharex=True, figsize = (6, 6))
@@ -81,7 +83,7 @@ def _taskf(plot = False, save = False):
     """
     SRA
     """
-    h, tau, psi, dpsi, ln_a_ai = _solver()
+    h, tau, psi, dpsi, ln_a_ai, p_rho_c = _solver()
     SRA_psi = _psi(phi_init) - tau / (4 * np.pi *_psi(phi_init))
     
     if plot:
@@ -99,7 +101,7 @@ def _taskf(plot = False, save = False):
 _epsilon = lambda phi: E_P ** 2 / (4 * np.pi * phi ** 2)
 
 def _taskg(plot = False, save = False):
-    h, tau, psi, dpsi, ln_a_ai = _solver()
+    h, tau, psi, dpsi, ln_a_ai, p_rho_c = _solver()
     phi = psi * E_P
     epsilon = _epsilon(phi)
 
@@ -113,16 +115,33 @@ def _taskg(plot = False, save = False):
         plt.xlabel(r"$\tau$")
         plt.ylabel(r"$\epsilon$")
         plt.yscale("log")
-        plt.xlim([0, 1500])
+        plt.axhline(1, color = "black", ls = "dashed") # indicating end of inflation
+        plt.xlim([0, 1500]); plt.ylim([0, 1e10])
 
     if save:
         plt.savefig("task_g.png")
+
+""" Task i """
+def _taski(plot = False, save = False):
+    h, tau, psi, dpsi, ln_a_ai, p_rho_c = _solver()
+
+    if plot:
+        plt.figure(figsize = (6, 6))
+        plt.plot(tau, p_rho_c, color = "black")
+        plt.xlabel(r"$\tau$")
+        plt.ylabel(r"$p_\phi / \rho_\phi c^2$")
+        plt.xlim([0, 1500])
+    
+    if save: 
+        plt.savefig("task_i.png")
+
 
 
 if __name__ == "__main__":
     _taske(plot = False, save = False)
     _taskf(plot = False, save = False)
     _taskg(plot = False, save = False)
+    _taski(plot = True, save = True)
     plt.show()
  
     
