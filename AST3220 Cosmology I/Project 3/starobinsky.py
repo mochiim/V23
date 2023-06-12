@@ -14,6 +14,7 @@ phi_i = psi_i * E_P
 y_i = - np.sqrt(16 * np.pi / 3) * psi_i
 
 # useful functions
+_psi = lambda phi: phi / E_P
 _y = lambda psi: - np.sqrt(16 * np.pi / 3) * psi
 _v = lambda psi: 3 / (8 * np.pi) *  (1 - np.exp(_y(psi))) ** 2  / (1 - np.exp(y_i)) ** 2
 _dv_dpsi = lambda psi: np.sqrt(3 / np.pi) * np.exp(_y(psi)) * (1 - np.exp(_y(psi))) / (1 - np.exp(y_i)) ** 2
@@ -93,34 +94,53 @@ def _taskm(plot = False, save = False):
 """ Task n """
 # slow-roll paramters
 _epsilon = lambda psi: 4 / 3 * np.exp(2 * _y(psi)) / (1 - np.exp(_y(psi))) ** 2
-_eta = lambda psi: 4/3 * (2 * np.exp(2 * _y(psi))) / (1 - np.exp(_y(psi))) ** 2
+_eta = lambda psi: (4/3) * (2 * np.exp(2 * _y(psi)) - np.exp(_y(psi))) / (1 - np.exp(_y(psi))) ** 2
 
 def _taskn(plot = False, save = False):
     h, tau, psi, dpsi, ln_a_ai, p_rho_c = _solver()
+
+    # task n: repeat of steps j)
     eps = _epsilon(psi)
     eta = _eta(psi)
-    tau_end = tau[np.where(eps >= 1)][0]
-
-    N_tot = ln_a_ai[np.where(tau == tau_end)][0]
+    end_of_inflation = np.where(eps >= 1)[0][0] 
+    N_tot = ln_a_ai[end_of_inflation] 
     idx = eps <= 1
     N_left = N_tot - ln_a_ai[idx]
 
-    # approximation
-    N_approx = 3 / 4 * np.exp(-_y(psi))
-    eps_approx = 3 / 4 * N_approx ** 2
+    # task o
+    N_approx = (3 / 4) * np.exp(-_y(psi))
+    eps_approx = 3 / (4 * N_approx ** 2)
     eta_approx = - 1 / N_approx
     idx_approx = eps_approx <= 1
+
+    # task n: repeat of steps k)
+    tau_end = tau[np.where(eps >= 1)][0]
+    psi_end = psi[np.where(tau == tau_end)][0]
+    phi_end = psi_end * E_P
+
+    psi_idx = []
+    for i in range(len(N)):
+        if N[i] > 50 and N[i] < 60:
+            eps_idx.append(psi[i])
+
+    n = 1 - 6 * _epsilon(np.array(psi_idx)) + 2 * _eta(np.array(psi_idx))
+    r = 16 * _epsilon(np.array(psi_idx))
+
+    plt.plot(n, r)
 
     if plot:
         plt.plot(N_left, eps[idx], color = "black", ls = "solid", label = r"$\epsilon_{numerical}$")
         plt.plot(N_left, eta[idx], color = "red", ls = "solid", label = r"$\eta_{numerical}$")
-        plt.plot(N_approx, eps_approx[idx_approx], color = "black", ls = "dashed", label = r"$\epsilon_{approximated}$")
-        plt.plot(N_approx, eta_approx[idx_approx], color = "red", ls = "dashed", label = r"$\eta_{approximated}$")
+        plt.plot(N_approx[idx_approx], eps_approx[idx_approx], color = "black", ls = "dashed", label = r"$\epsilon_{approximated}$")
+        plt.plot(N_approx[idx_approx], eta_approx[idx_approx], color = "red", ls = "dashed", label = r"$\eta_{approximated}$")
         plt.xlabel("N"); plt.ylabel(r"$\epsilon, \eta$")
         plt.xscale("log")
         plt.legend()
+
+    if save: 
+        plt.savefig("task_o_and_n_1.png")
     
 if __name__ == "__main__":
     _taskm(plot = False, save = False)
-    _taskn(plot = True, save = False)
+    _taskn(plot = False, save = False)
     plt.show()
