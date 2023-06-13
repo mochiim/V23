@@ -96,10 +96,10 @@ def _taskm(plot = False, save = False):
 _epsilon = lambda psi: 4 / 3 * np.exp(2 * _y(psi)) / (1 - np.exp(_y(psi))) ** 2
 _eta = lambda psi: (4/3) * (2 * np.exp(2 * _y(psi)) - np.exp(_y(psi))) / (1 - np.exp(_y(psi))) ** 2
 
-def _taskn(plot = False, save = False):
+def _taskno(plot_ε_n = False, save_ε_n = False, plot_n_r = False, save_n_r = False):
     h, tau, psi, dpsi, ln_a_ai, p_rho_c = _solver()
 
-    # task n: repeat of steps j)
+    # task n: ε and n
     eps = _epsilon(psi)
     eta = _eta(psi)
     end_of_inflation = np.where(eps >= 1)[0][0] 
@@ -107,28 +107,36 @@ def _taskn(plot = False, save = False):
     idx = eps <= 1
     N_left = N_tot - ln_a_ai[idx]
 
-    # task o
+    # task o: slow-roll parameters
     N_approx = (3 / 4) * np.exp(-_y(psi))
     eps_approx = 3 / (4 * N_approx ** 2)
     eta_approx = - 1 / N_approx
     idx_approx = eps_approx <= 1
 
-    # task n: repeat of steps k)
-    tau_end = tau[np.where(eps >= 1)][0]
-    psi_end = psi[np.where(tau == tau_end)][0]
-    phi_end = psi_end * E_P
+    # task n: n and r
+    psi_num = []
+    N_num = []
+    for i in range(len(N_left)):
+        if N_left[i] > 50 and N_left[i] < 60:
+            psi_num.append(psi[i])
+            N_num.append(N_left[i])
 
-    psi_idx = []
-    for i in range(len(N)):
-        if N[i] > 50 and N[i] < 60:
-            eps_idx.append(psi[i])
 
-    n = 1 - 6 * _epsilon(np.array(psi_idx)) + 2 * _eta(np.array(psi_idx))
-    r = 16 * _epsilon(np.array(psi_idx))
+    eps_num = _epsilon(np.array(psi_num))
+    eta_num = _eta(np.array(psi_num))
 
-    plt.plot(n, r)
+    n = 1 - 6 * eps_num + 2 * eta_num
+    r = 16 * eps_num
 
-    if plot:
+    # task o: n and r
+    n_approx = 1 - 2 / np.array(N_num)
+    r_approx = 12 / np.array(N_num) ** 2
+
+    print(f"Constraint on n: {n[-1]}")
+    print(f"Constraint on r: {r[-1]}")
+
+    if plot_ε_n:
+        plt.figure(figsize = (6, 6))
         plt.plot(N_left, eps[idx], color = "black", ls = "solid", label = r"$\epsilon_{numerical}$")
         plt.plot(N_left, eta[idx], color = "red", ls = "solid", label = r"$\eta_{numerical}$")
         plt.plot(N_approx[idx_approx], eps_approx[idx_approx], color = "black", ls = "dashed", label = r"$\epsilon_{approximated}$")
@@ -137,10 +145,20 @@ def _taskn(plot = False, save = False):
         plt.xscale("log")
         plt.legend()
 
-    if save: 
-        plt.savefig("task_o_and_n_1.png")
+    if plot_ε_n: 
+        plt.savefig("task_o_n_ε_n.png")
+
+    if plot_n_r:
+        plt.figure(figsize = (7, 6))
+        plt.plot(n, r, color = "black", ls = "solid", label = "Numerical")
+        plt.plot(n_approx, r_approx, color = "red", ls = "dashed", label = "Approximated")
+        plt.xlabel("n"); plt.ylabel("r")
+        plt.legend()
+
+    if save_n_r: 
+        plt.savefig("task_o_n_r_n_2.png")
     
 if __name__ == "__main__":
     _taskm(plot = False, save = False)
-    _taskn(plot = False, save = False)
+    _taskno(plot_ε_n = False, save_ε_n = False, plot_n_r = False, save_n_r = False)
     plt.show()

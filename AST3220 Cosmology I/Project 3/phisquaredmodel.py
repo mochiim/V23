@@ -171,6 +171,8 @@ def _taskk(plot = False, save = False):
 
     r = 16 * epsilon
     n = 1 - 4 * epsilon
+    print(f"Constraint on n: {n[-1]}")
+    print(f"Constraint on r: {r[-1]}")
     if plot:
         plt.figure(figsize = (6, 6))
         plt.plot(n, r, color = "black")
@@ -182,12 +184,12 @@ def _taskk(plot = False, save = False):
 
 
 if __name__ == "__main__":
-    #_taske(plot = False, save = False)
-    #_taskf(plot = False, save = False)
-    #_taskg(plot = False, save = False)
-    #_taski(plot = False, save = False)
-    #_taskj(plot = False, save = False)
-    #_taskk(plot = True, save = True)
+    _taske(plot = False, save = False)
+    _taskf(plot = False, save = False)
+    _taskg(plot = False, save = False)
+    _taski(plot = False, save = False)
+    _taskj(plot = False, save = False)
+    _taskk(plot = False, save = False)
     plt.show()
  
     
