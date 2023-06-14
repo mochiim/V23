@@ -19,22 +19,6 @@ _y = lambda psi: - np.sqrt(16 * np.pi / 3) * psi
 _v = lambda psi: 3 / (8 * np.pi) *  (1 - np.exp(_y(psi))) ** 2  / (1 - np.exp(y_i)) ** 2
 _dv_dpsi = lambda psi: np.sqrt(3 / np.pi) * np.exp(_y(psi)) * (1 - np.exp(_y(psi))) / (1 - np.exp(y_i)) ** 2
 
-def _plot(x, y, xlabel, ylabel):
-    """
-    Plotting function
-
-    Arguments:
-    x: array to be plotted on the x-axis
-    y: array to be plotted on the y-axis
-    xlabel: string for label on x-axis
-    ylabel: string for label on y-axis
-    """
-    plt.figure(figsize = (6, 6))
-    plt.plot(x, y, color = "black")
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-
-
 """ Task m """
 def _solver(n = int(1e6)):
 
@@ -114,6 +98,7 @@ def _taskno(plot_ε_n = False, save_ε_n = False, plot_n_r = False, save_n_r = F
     idx_approx = eps_approx <= 1
 
     # task n: n and r
+    # slicing indices for psi and N_left so the period before inflation ends, is included
     psi_num = []
     N_num = []
     for i in range(len(N_left)):
@@ -160,5 +145,5 @@ def _taskno(plot_ε_n = False, save_ε_n = False, plot_n_r = False, save_n_r = F
     
 if __name__ == "__main__":
     _taskm(plot = False, save = False)
-    _taskno(plot_ε_n = False, save_ε_n = False, plot_n_r = False, save_n_r = False)
+    _taskno(plot_ε_n = True, save_ε_n = False, plot_n_r = False, save_n_r = False)
     plt.show()
